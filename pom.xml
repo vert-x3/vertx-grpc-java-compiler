@@ -42,6 +42,11 @@
         <file>${basedir}/bin/protoc-gen-grpc-java-windows-x86_32.exe</file>
         <type>exe</type>
         </artifact>
+        <artifact>
+        <classifier>osx-x86_64</classifier>
+        <file>${basedir}/bin/protoc-gen-grpc-java-osx-x86_32.exe</file>
+        <type>exe</type>
+        </artifact>
       </artifacts>
       </configuration>
       </execution>
