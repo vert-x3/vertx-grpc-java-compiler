@@ -1,5 +1,7 @@
-protoc-gen-grpc-java.exe: java_generator.o java_plugin.o
-	i686-w64-mingw32-g++ -o protoc-gen-grpc-java.exe java_plugin.o java_generator.o -lpthread lib/win32/libprotoc.a lib/win32/libprotobuf.a -m32 -s
+protoc-gen-grpc-java-windows-x86_32.exe: java_generator.o java_plugin.o
+	i686-w64-mingw32-g++ -o protoc-gen-grpc-java-windows-x86_32.exe java_plugin.o java_generator.o -lpthread lib/win32/libprotoc.a lib/win32/libprotobuf.a -m32 -s
+	mkdir -p bin
+	cp protoc-gen-grpc-java-windows-x86_32.exe bin
 
 java_generator.o: java_generator.cpp java_generator.h
 	i686-w64-mingw32-g++ -Ibuild/protobuf-3.1.0/src -x c++ -c -DGRPC_VERSION=1.0.3 --std=c++0x -m32 java_generator.cpp
@@ -8,4 +10,4 @@ java_plugin.o: java_plugin.cpp
 	i686-w64-mingw32-g++ -Ibuild/protobuf-3.1.0/src -x c++ -c -DGRPC_VERSION=1.0.3 --std=c++0x -m32 java_plugin.cpp
 
 clean: 
-	rm -f protoc-gen-grpc-java.exe *.o
+	rm -f *.exe *.o
