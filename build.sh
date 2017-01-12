@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+rm -Rf bin || true
+
 make clean
 make
 

@@ -617,6 +617,11 @@ static void PrintStub(
       continue;
     }
 
+    if (call_type == VERTX_CALL && client_streaming) {
+      // Blocking client interface with client streaming is not available
+      continue;
+    }
+
     // Method signature
     p->Print("\n");
     // TODO(nmittler): Replace with WriteMethodDocComment once included by the protobuf distro.
@@ -942,19 +947,19 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
 
     switch(call_type) {
       case VERTX_CALL:
-        p->Print(
-            *vars,
-            "case $method_id_name$:\n"
-            "  serviceImpl.$lower_method_name$(($input_type$) request,\n"
-            "      io.vertx.core.Future.<$output_type$>future().setHandler(ar -> {\n"
-            "        if (ar.succeeded()) {\n"
-            "          responseObserver.onNext((Resp) ar.result());\n"
-            "        } else {\n"
-            "          responseObserver.onError(ar.cause());\n"
-            "        }\n"
-            "        responseObserver.onCompleted();\n"
-            "      }).completer());\n"
-            "  break;\n");
+          p->Print(
+              *vars,
+              "case $method_id_name$:\n"
+              "  serviceImpl.$lower_method_name$(($input_type$) request,\n"
+              "      io.vertx.core.Future.<$output_type$>future().setHandler(ar -> {\n"
+              "        if (ar.succeeded()) {\n"
+              "          responseObserver.onNext((Resp) ar.result());\n"
+              "        } else {\n"
+              "          responseObserver.onError(ar.cause());\n"
+              "        }\n"
+              "        responseObserver.onCompleted();\n"
+              "      }).completer());\n"
+              "  break;\n");
         break;
       default:
         p->Print(
@@ -995,11 +1000,19 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
                                                 method->input_type());
     (*vars)["output_type"] = MessageFullJavaName(generate_nano,
                                                  method->output_type());
-    p->Print(
-        *vars,
-        "case $method_id_name$:\n"
-        "  return ($StreamObserver$<Req>) serviceImpl.$lower_method_name$(\n"
-        "      ($StreamObserver$<$output_type$>) responseObserver);\n");
+
+    switch(call_type) {
+      case VERTX_CALL:
+          // NOT SUPPORTED
+        break;
+      default:
+        p->Print(
+            *vars,
+            "case $method_id_name$:\n"
+            "  return ($StreamObserver$<Req>) serviceImpl.$lower_method_name$(\n"
+            "      ($StreamObserver$<$output_type$>) responseObserver);\n");
+        break;
+    }
   }
   p->Print("default:\n"
            "  throw new AssertionError();\n");
