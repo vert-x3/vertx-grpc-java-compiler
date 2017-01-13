@@ -1,13 +1,18 @@
-protoc-gen-grpc-java-linux-x86_64.exe: java_generator.o java_plugin.o
-	g++ -o protoc-gen-grpc-java-linux-x86_64.exe java_plugin.o java_generator.o -lpthread lib/linux/libprotoc.a lib/linux/libprotobuf.a -m64 -s
-	mkdir -p bin
-	cp protoc-gen-grpc-java-linux-x86_64.exe bin
+OBJS = $(CROSS_TRIPLE)/java_generator.o $(CROSS_TRIPLE)/java_plugin.o
 
-java_generator.o: java_generator.cpp java_generator.h
-	g++ -Ibuild/protobuf-3.1.0/src -x c++ -c -DGRPC_VERSION=1.0.3 --std=c++0x -m64 java_generator.cpp
+ifneq ($(CROSS_TRIPLE), x86_64-w64-mingw32)
+ifneq ($(CROSS_TRIPLE), i686-w64-mingw32)
+    LDEXTRA := -Wl,-Bdynamic -lpthread
+endif
+endif
 
-java_plugin.o: java_plugin.cpp
-	g++ -Ibuild/protobuf-3.1.0/src -x c++ -c -DGRPC_VERSION=1.0.3 --std=c++0x -m64 java_plugin.cpp
+$(CROSS_TRIPLE)/protoc-gen-grpc-java.exe: $(OBJS) 
+	$(CXX) -o $(CROSS_TRIPLE)/protoc-gen-grpc-java.exe $(OBJS) -static-libgcc -static-libstdc++ -Wl,-Bstatic -L$(CROSS_TRIPLE) -lprotoc -lprotobuf $(LDEXTRA) -s
 
-clean: 
-	rm -f *.exe *.o
+$(CROSS_TRIPLE)/%.o: ./%.cpp
+	$(CXX) -Ibuild/protobuf-3.1.0/src -x c++ -c -DGRPC_VERSION=1.0.3 --std=c++0x -o $@ $< $(CFLAGS) 
+
+.PHONY: clean
+
+clean:
+	@rm -f $(CROSS_TRIPLE)/*.o $(CROSS_TRIPLE)/protoc-gen-grpc-java.exe

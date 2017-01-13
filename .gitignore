@@ -1,10 +1,5 @@
 *.o
-out
-build/protobuf-*
-!build/protobuf-*.tar.gz
-lib
-bin
 *.proto
-.settings
-.project
 *.exe
+protobuf-3.1.0
+.vscode

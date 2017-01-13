@@ -1,16 +1,14 @@
 #!/bin/sh
-rm -Rf bin
+set -e
 
-make clean
-make
+# Linux64
+docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-linux-gnu -it vertx-grpc ./build-protobuf.sh
+docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-linux-gnu -it vertx-grpc make
 
-make -f Makefile.win32 clean
-make -f Makefile.win32
+# Win32
+docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=i686-w64-mingw32 -it vertx-grpc ./build-protobuf.sh
+docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=i686-w64-mingw32 -it vertx-grpc make
 
-make -f Makefile.win64 clean
-make -f Makefile.win64
-
-make -f Makefile.mac clean
-make -f Makefile.mac
-
-mvn install
+# Win64
+docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-w64-mingw32 -it vertx-grpc ./build-protobuf.sh
+docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-w64-mingw32 -it vertx-grpc make
