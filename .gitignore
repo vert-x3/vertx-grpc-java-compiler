@@ -3,3 +3,8 @@
 *.exe
 protobuf-3.1.0
 .vscode
+out
+versions
+*.exe
+*.a
+*.la

@@ -42,11 +42,11 @@
         <file>${basedir}/i686-w64-mingw32/protoc-gen-grpc-java.exe</file>
         <type>exe</type>
         </artifact>
-        <!--<artifact>
+        <artifact>
         <classifier>osx-x86_64</classifier>
-        <file>${basedir}/bin/protoc-gen-grpc-java-osx-x86_32.exe</file>
+        <file>${basedir}/x86_64-apple-darwin14/protoc-gen-grpc-java.exe</file>
         <type>exe</type>
-        </artifact>-->
+        </artifact>
       </artifacts>
       </configuration>
       </execution>
