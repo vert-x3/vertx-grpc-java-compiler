@@ -1242,6 +1242,18 @@ static void PrintService(const ServiceDescriptor* service,
   p->Outdent();
   p->Print("}\n\n");
 
+  // TODO(nmittler): Replace with WriteDocComment once included by protobuf distro.
+  GrpcWriteDocComment(p, " Creates a new vertx stub that supports all call types for the service");
+  p->Print(
+      *vars,
+      "public static $service_name$VertxStub newVertxStub($Channel$ channel) {\n");
+  p->Indent();
+  p->Print(
+      *vars,
+      "return new $service_name$VertxStub(channel);\n");
+  p->Outdent();
+  p->Print("}\n\n");
+
   bool generate_nano = flavor == ProtoFlavor::NANO;
   PrintStub(service, vars, p, ABSTRACT_CLASS, generate_nano, enable_deprecated);
   PrintStub(service, vars, p, ASYNC_CLIENT_IMPL, generate_nano, enable_deprecated);

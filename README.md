@@ -1,4 +1,4 @@
-# vertx-grpc-java-compiler
+# vertx-grpc-java-compiler 1.1.1
 
 This is a custom protobuf compiled for java targetting the Vert.x programming model.
 
@@ -8,42 +8,21 @@ Not much to see for now...
 
 gRPC assumes you already have a couple of dependencies on your system:
 
-* Java >=1.7
-* `libprotoc` and `libprotobuf`
-* a (not to old) Working C++ compiler toolchain
+* Docker
+* A working Bash shell
+* maven
 
-## Fedora build machine dependencies
+Docker will be used to provide a set of cross compilers and the output of the build will end up on this directory.
 
-* gcc
-* gcc-c++
-* mingw32-gcc
-* mingw32-gcc-c++
-* mingw64-gcc
-* mingw64-gcc-c++
-
-## Build the protobuf dependency
-
-```
-cd build
-./build-linux.sh
-./build-win32.sh
-./build-linux.sh
-```
-
-You should have now the dependencies to build the plugin.
+Maven will then collect the binaries and archive into the local repository.
 
 ## Build the plugin
 
 ```
-make clean
-make
-
-make -f Makefile.win32 clean
-make -f Makefile.win32
-
-make -f Makefile.win64 clean
-make -f Makefile.win64
+sudo ./build.sh
 ```
+
+Note that sudo is used here since in Fedora docker requires it, if you don't need it for your case don't use sudo.
 
 ## Archive the maven artifacts
 
