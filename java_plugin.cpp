@@ -9,7 +9,6 @@
 #include <google/protobuf/compiler/code_generator.h>
 #include <google/protobuf/compiler/plugin.h>
 #include <google/protobuf/descriptor.h>
-#include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/io/zero_copy_stream.h>
 
 static string JavaPackageToDir(const string& package_name) {
@@ -32,7 +31,7 @@ class JavaGrpcGenerator : public google::protobuf::compiler::CodeGenerator {
                         const string& parameter,
                         google::protobuf::compiler::GeneratorContext* context,
                         string* error) const {
-    vector<pair<string, string> > options;
+    std::vector<std::pair<string, string> > options;
     google::protobuf::compiler::ParseGeneratorParameter(parameter, &options);
 
     java_grpc_generator::ProtoFlavor flavor =

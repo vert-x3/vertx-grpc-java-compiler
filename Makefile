@@ -10,7 +10,7 @@ $(CROSS_TRIPLE)/protoc-gen-grpc-java.exe: $(OBJS)
 	$(CXX) -o $(CROSS_TRIPLE)/protoc-gen-grpc-java.exe $(OBJS) -static-libgcc -static-libstdc++ -Wl,-Bstatic -L$(CROSS_TRIPLE) -lprotoc -lprotobuf $(LDEXTRA) -s
 
 $(CROSS_TRIPLE)/%.o: ./%.cpp
-	$(CXX) -Ibuild/protobuf-3.1.0/src -x c++ -c -DGRPC_VERSION=1.0.3 --std=c++0x -o $@ $< $(CFLAGS) 
+	$(CXX) -Iprotobuf-3.1.0/src -x c++ -c -DGRPC_VERSION=1.1.1 --std=c++0x -o $@ $< $(CFLAGS) 
 
 .PHONY: clean
 

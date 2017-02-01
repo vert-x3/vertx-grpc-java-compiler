@@ -6,7 +6,7 @@
   <groupId>io.vertx</groupId>
   <artifactId>protoc-gen-grpc-java</artifactId>
   <packaging>pom</packaging>
-  <version>1.0.3</version>
+  <version>1.1.1</version>
   
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -29,24 +29,24 @@
       <artifacts>
         <artifact>
         <classifier>linux-x86_64</classifier>
-        <file>${basedir}/bin/protoc-gen-grpc-java-linux-x86_64.exe</file>
+        <file>${basedir}/x86_64-linux-gnu/protoc-gen-grpc-java.exe</file>
         <type>exe</type>
         </artifact>
         <artifact>
         <classifier>windows-x86_64</classifier>
-        <file>${basedir}/bin/protoc-gen-grpc-java-windows-x86_64.exe</file>
+        <file>${basedir}/x86_64-w64-mingw32/protoc-gen-grpc-java.exe</file>
         <type>exe</type>
         </artifact>
         <artifact>
         <classifier>windows-x86_32</classifier>
-        <file>${basedir}/bin/protoc-gen-grpc-java-windows-x86_32.exe</file>
+        <file>${basedir}/i686-w64-mingw32/protoc-gen-grpc-java.exe</file>
         <type>exe</type>
         </artifact>
-        <artifact>
+        <!--<artifact>
         <classifier>osx-x86_64</classifier>
         <file>${basedir}/bin/protoc-gen-grpc-java-osx-x86_32.exe</file>
         <type>exe</type>
-        </artifact>
+        </artifact>-->
       </artifacts>
       </configuration>
       </execution>
