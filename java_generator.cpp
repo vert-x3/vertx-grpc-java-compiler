@@ -617,11 +617,6 @@ static void PrintStub(
       continue;
     }
 
-    if (call_type == VERTX_CALL && client_streaming) {
-      // Blocking client interface with client streaming is not available
-      continue;
-    }
-
     // Method signature
     p->Print("\n");
     // TODO(nmittler): Replace with WriteMethodDocComment once included by the protobuf distro.
@@ -681,8 +676,8 @@ static void PrintStub(
           // Bidirectional streaming or client streaming
           p->Print(
               *vars,
-              "$StreamObserver$<$input_type$> $lower_method_name$(\n"
-              "    $StreamObserver$<$output_type$> responseObserver)");
+              "io.vertx.core.Handler<io.vertx.core.AsyncResult<$input_type$>> $lower_method_name$(\n"
+              "    io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>> responseObserver)");
         } else {
           // Server streaming or simple RPC
           p->Print(
@@ -719,25 +714,24 @@ static void PrintStub(
           if (client_streaming) {
             p->Print(
                 *vars,
-                "return asyncUnimplementedStreamingCall($method_field_name$, responseObserver);\n");
+                "final $StreamObserver$<$input_type$> observer = asyncUnimplementedStreamingCall($method_field_name$, $service_class_name$.toObserver(responseObserver));\n"
+                "\n"
+                "return ar -> {\n"
+                "  if (ar.succeeded()) {\n"
+                "    final $input_type$ value = ar.result();\n"
+                "    if (value != null) {\n"
+                "      observer.onNext(value);\n"
+                "    } else {\n"
+                "       observer.onCompleted();\n"
+                "    }\n"
+                "  } else {\n"
+                "    observer.onError(ar.cause());\n"
+                "  }\n"
+                "};\n");
           } else {
             p->Print(
                 *vars,
-                "asyncUnimplementedUnaryCall($method_field_name$, new $StreamObserver$<$output_type$>() {\n"
-                "  @Override\n"
-                "  public void onNext($output_type$ value) {\n"
-                "    responseObserver.handle(io.vertx.core.Future.succeededFuture(value));\n"
-                "  }\n"
-                "\n"
-                "  @Override\n"
-                "  public void onError(Throwable t) {\n "
-                "    responseObserver.handle(io.vertx.core.Future.failedFuture(t));\n"
-                "  }\n"
-                "\n"
-                "  @Override\n"
-                "  public void onCompleted() {\n"
-                "  }\n"
-                "});\n");
+                "asyncUnimplementedUnaryCall($method_field_name$, $service_class_name$.toObserver(responseObserver));\n");
           }
           break;
         default:
@@ -817,25 +811,39 @@ static void PrintStub(
               (*vars)["param1"] = "responseObserver";
             }
           }
-          (*vars)["last_line_prefix"] = client_streaming ? "return " : "";
-          p->Print(
-              *vars,
-              "$last_line_prefix$$calls_method$(\n"
-              "    getChannel().newCall($method_field_name$, getCallOptions()), $param0$new $StreamObserver$<$output_type$>() {\n"
-              "  @Override\n"
-              "  public void onNext($output_type$ value) {\n"
-              "    $param1$.handle(io.vertx.core.Future.succeededFuture(value));\n"
-              "  }\n"
-              "\n"
-              "  @Override\n"
-              "  public void onError(Throwable t) {\n "
-              "    $param1$.handle(io.vertx.core.Future.failedFuture(t));\n"
-             "  }\n"
-              "\n"
-              "  @Override\n"
-              "  public void onCompleted() {\n"
-              "  }\n"
-              "});\n");
+          if (client_streaming) {
+            p->Print(
+                *vars,
+                "final $StreamObserver$<$input_type$> observer = ");
+          }
+          if (server_streaming) {
+            p->Print(
+                *vars,
+                "$calls_method$(\n"
+                "    getChannel().newCall($method_field_name$, getCallOptions()), $param0$$service_class_name$.toObserver($param1$));\n");
+          } else {
+            p->Print(
+                *vars,
+                "$calls_method$(\n"
+                "    getChannel().newCall($method_field_name$, getCallOptions()), $param0$$service_class_name$.toSingle($param1$));\n");
+          }
+          if (client_streaming) {
+            p->Print(
+                *vars,
+                "\n"
+                "return ar -> {\n"
+                "  if (ar.succeeded()) {\n"
+                "    final $input_type$ value = ar.result();\n"
+                "    if (value != null) {\n"
+                "      observer.onNext(value);\n"
+                "    } else {\n"
+                "      observer.onCompleted();\n"
+                "    }\n"
+                "  } else {\n"
+                "    observer.onError(ar.cause());\n"
+                "  }\n"
+                "};\n");
+          }
           break;
       }
     }
@@ -946,19 +954,35 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
 
     switch(call_type) {
       case VERTX_CALL:
+        p->Print(
+            *vars,
+            "case $method_id_name$:\n"
+            "  serviceImpl.$lower_method_name$(($input_type$) request,\n"
+            "      (io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>>) ar -> {\n"
+            "        if (ar.succeeded()) {\n");
+        if (!method->server_streaming()) {
+          // act like a future
           p->Print(
               *vars,
-              "case $method_id_name$:\n"
-              "  serviceImpl.$lower_method_name$(($input_type$) request,\n"
-              "      io.vertx.core.Future.<$output_type$>future().setHandler(ar -> {\n"
-              "        if (ar.succeeded()) {\n"
-              "          responseObserver.onNext((Resp) ar.result());\n"
-              "        } else {\n"
-              "          responseObserver.onError(ar.cause());\n"
-              "        }\n"
-              "        responseObserver.onCompleted();\n"
-              "      }).completer());\n"
-              "  break;\n");
+              "          (($StreamObserver$<$output_type$>) responseObserver).onNext(ar.result());\n"
+              "          responseObserver.onCompleted();\n");
+        } else {
+          p->Print(
+              *vars,
+              "          final $output_type$ value = ar.result();\n"
+              "          if (value == null) {\n"
+              "            responseObserver.onCompleted();\n"
+              "          } else {\n"
+              "            (($StreamObserver$<$output_type$>) responseObserver).onNext(value);\n"
+              "          }\n");
+        }
+        p->Print(
+            *vars,
+            "        } else {\n"
+            "          responseObserver.onError(ar.cause());\n"
+            "        }\n"
+            "      });\n"
+            "  break;\n");
         break;
       default:
         p->Print(
@@ -1002,7 +1026,35 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
 
     switch(call_type) {
       case VERTX_CALL:
-          // NOT SUPPORTED
+        p->Print(
+            *vars,
+            "case $method_id_name$:\n"
+            "  return ($StreamObserver$<Req>) $service_class_name$.toObserver(serviceImpl.$lower_method_name$(\n"
+            "      (io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>>) ar -> {\n"
+            "        if (ar.succeeded()) {\n");
+
+        if (!method->server_streaming()) {
+          // act like a future
+          p->Print(
+              *vars,
+              "          (($StreamObserver$<$output_type$>) responseObserver).onNext(ar.result());\n"
+              "          responseObserver.onCompleted();\n");
+        } else {
+          p->Print(
+              *vars,
+              "          final $output_type$ value = ar.result();\n"
+              "          if (value == null) {\n"
+              "            responseObserver.onCompleted();\n"
+              "          } else {\n"
+              "            (($StreamObserver$<$output_type$>) responseObserver).onNext(value);\n"
+              "          }\n");
+        }
+        p->Print(
+            *vars,
+              "        } else {\n"
+              "          responseObserver.onError(ar.cause());\n"
+              "        }\n"
+              "      }));\n");
         break;
       default:
         p->Print(
@@ -1194,6 +1246,50 @@ static void PrintService(const ServiceDescriptor* service,
   p->Print(
       *vars,
       "private $service_class_name$() {}\n\n");
+  
+  // Vert.x helper
+  p->Print(
+    *vars,
+    "private static <T> $StreamObserver$<T> toObserver(final io.vertx.core.Handler<io.vertx.core.AsyncResult<T>> handler) {\n"
+    "  return new $StreamObserver$<T>() {\n"
+    "    @Override\n"
+    "    public void onNext(T value) {\n"
+    "      handler.handle(io.vertx.core.Future.succeededFuture(value));\n"
+    "    }\n"
+    "\n"
+    "    @Override\n"
+    "    public void onError(Throwable t) {\n"
+    "      handler.handle(io.vertx.core.Future.failedFuture(t));\n"
+    "    }\n"
+    "\n"
+    "    @Override\n"
+    "    public void onCompleted() {\n"
+    "      handler.handle(io.vertx.core.Future.succeededFuture());\n"
+    "    }\n"
+    "  };\n"
+    "}\n\n"
+    "private static <T> $StreamObserver$<T> toSingle(final io.vertx.core.Handler<io.vertx.core.AsyncResult<T>> handler) {\n"
+    "  return new $StreamObserver$<T>() {\n"
+    "    private boolean resolved = false;\n"
+    "    @Override\n"
+    "    public void onNext(T value) {\n"
+    "      if (resolved) {\n"
+    "        throw new RuntimeException(\"Already Resolved\");\n"
+    "      }\n"
+    "      resolved = true;\n"
+    "      handler.handle(io.vertx.core.Future.succeededFuture(value));\n"
+    "    }\n"
+    "\n"
+    "    @Override\n"
+    "    public void onError(Throwable t) {\n"
+    "      handler.handle(io.vertx.core.Future.failedFuture(t));\n"
+    "    }\n"
+    "\n"
+    "    @Override\n"
+    "    public void onCompleted() {\n"
+    "    }\n"
+    "  };\n"
+    "}\n\n");
 
   p->Print(
       *vars,
