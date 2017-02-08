@@ -674,10 +674,17 @@ static void PrintStub(
       case VERTX_CALL:
         if (client_streaming) {
           // Bidirectional streaming or client streaming
-          p->Print(
-              *vars,
-              "io.vertx.core.Handler<io.vertx.core.AsyncResult<$input_type$>> $lower_method_name$(\n"
-              "    io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>> responseObserver)");
+          if (impl_base || interface) {
+            p->Print(
+                *vars,
+                "io.vertx.core.Handler<io.vertx.core.AsyncResult<$input_type$>> $lower_method_name$(\n"
+                "    io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>> responseObserver)");
+          } else {
+            p->Print(
+                *vars,
+                "io.vertx.grpc.GrpcWriteStream<$input_type$> $lower_method_name$(\n"
+                "    io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>> responseObserver)");
+          }
         } else {
           // Server streaming or simple RPC
           p->Print(
@@ -814,35 +821,27 @@ static void PrintStub(
           if (client_streaming) {
             p->Print(
                 *vars,
-                "final $StreamObserver$<$input_type$> observer = ");
+                "return io.vertx.grpc.GrpcWriteStream.create(");
           }
           if (server_streaming) {
             p->Print(
                 *vars,
                 "$calls_method$(\n"
-                "    getChannel().newCall($method_field_name$, getCallOptions()), $param0$$service_class_name$.toObserver($param1$));\n");
+                "    getChannel().newCall($method_field_name$, getCallOptions()), $param0$$service_class_name$.toObserver($param1$))");
           } else {
             p->Print(
                 *vars,
                 "$calls_method$(\n"
-                "    getChannel().newCall($method_field_name$, getCallOptions()), $param0$$service_class_name$.toSingle($param1$));\n");
+                "    getChannel().newCall($method_field_name$, getCallOptions()), $param0$$service_class_name$.toSingle($param1$))");
           }
           if (client_streaming) {
             p->Print(
                 *vars,
-                "\n"
-                "return ar -> {\n"
-                "  if (ar.succeeded()) {\n"
-                "    final $input_type$ value = ar.result();\n"
-                "    if (value != null) {\n"
-                "      observer.onNext(value);\n"
-                "    } else {\n"
-                "      observer.onCompleted();\n"
-                "    }\n"
-                "  } else {\n"
-                "    observer.onError(ar.cause());\n"
-                "  }\n"
-                "};\n");
+                ");\n");
+          } else {
+            p->Print(
+                *vars,
+                ";\n");            
           }
           break;
       }
