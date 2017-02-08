@@ -684,7 +684,7 @@ static void PrintStub(
               p->Print(
                   *vars,
                   "/*client_streaming && impl_base  && !server_streaming*/io.vertx.grpc.GrpcReadStream<$input_type$> $lower_method_name$(\n"
-                  "    io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>> responseObserver)");
+                  "    io.vertx.core.Future<$output_type$> responseObserver)");
             }
           } else {
             if (server_streaming) {
@@ -714,10 +714,17 @@ static void PrintStub(
                   "    io.vertx.grpc.GrpcReadStream<$output_type$> responseObserver)");
             }
           } else {
-            p->Print(
-                *vars,
-                "/*!client_streaming && !server_streaming*/void $lower_method_name$($input_type$ request,\n"
-                "    io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>> responseObserver)");
+            if (impl_base || interface) {
+              p->Print(
+                  *vars,
+                  "/*!client_streaming && impl_base && !server_streaming*/void $lower_method_name$($input_type$ request,\n"
+                  "    io.vertx.core.Future<$output_type$> responseObserver)");
+            } else {
+              p->Print(
+                  *vars,
+                  "/*!client_streaming && !impl_base && !server_streaming*/void $lower_method_name$($input_type$ request,\n"
+                  "    io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>> responseObserver)");
+            }
           }
         }
         break;
@@ -756,7 +763,7 @@ static void PrintStub(
             } else {
               p->Print(
                   *vars,
-                  "final $StreamObserver$<$input_type$> observer = asyncUnimplementedStreamingCall($method_field_name$, $service_class_name$.toObserver(responseObserver));\n"
+                  "final $StreamObserver$<$input_type$> observer = asyncUnimplementedStreamingCall($method_field_name$, $service_class_name$.toObserver(responseObserver.completer()));\n"
                   "\n"
                   "return io.vertx.grpc.GrpcReadStream.create(observer);\n");
             }
@@ -768,7 +775,7 @@ static void PrintStub(
             } else {
               p->Print(
                   *vars,
-                  "asyncUnimplementedUnaryCall($method_field_name$, $service_class_name$.toObserver(responseObserver));\n");
+                  "asyncUnimplementedUnaryCall($method_field_name$, $service_class_name$.toObserver(responseObserver.completer()));\n");
             }
           }
           break;
@@ -996,14 +1003,14 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
           // act like a future
           p->Print(
             *vars,
-            "      (io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>>) ar -> {\n"
+            "      (io.vertx.core.Future<$output_type$>) io.vertx.core.Future.<$output_type$>future().setHandler(ar -> {\n"
             "        if (ar.succeeded()) {\n"
             "          (($StreamObserver$<$output_type$>) responseObserver).onNext(ar.result());\n"
             "          responseObserver.onCompleted();\n"
             "        } else {\n"
             "          responseObserver.onError(ar.cause());\n"
             "        }\n"
-            "      });\n");
+            "      }));\n");
         }
         p->Print(
           *vars,
@@ -1064,14 +1071,14 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
           // act like a future
           p->Print(
             *vars,
-            "      (io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>>) ar -> {\n"
+            "      (io.vertx.core.Future<$output_type$>) io.vertx.core.Future.<$output_type$>future().setHandler(ar -> {\n"
             "        if (ar.succeeded()) {\n"
             "          (($StreamObserver$<$output_type$>) responseObserver).onNext(ar.result());\n"
             "          responseObserver.onCompleted();\n"
             "        } else {\n"
             "          responseObserver.onError(ar.cause());\n"
             "        }\n"
-            "      }).observer();\n");
+            "      })).observer();\n");
         }
         break;
       default:
