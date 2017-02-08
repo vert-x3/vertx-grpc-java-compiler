@@ -675,22 +675,50 @@ static void PrintStub(
         if (client_streaming) {
           // Bidirectional streaming or client streaming
           if (impl_base || interface) {
-            p->Print(
-                *vars,
-                "io.vertx.grpc.GrpcReadStream<$input_type$> $lower_method_name$(\n"
-                "    io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>> responseObserver)");
+            if (server_streaming) {
+              p->Print(
+                  *vars,
+                  "/*client_streaming && impl_base && server_streaming*/io.vertx.grpc.GrpcReadStream<$input_type$> $lower_method_name$(\n"
+                  "    io.vertx.grpc.GrpcWriteStream<$output_type$> responseObserver)");
+            } else {
+              p->Print(
+                  *vars,
+                  "/*client_streaming && impl_base  && !server_streaming*/io.vertx.grpc.GrpcReadStream<$input_type$> $lower_method_name$(\n"
+                  "    io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>> responseObserver)");
+            }
           } else {
-            p->Print(
-                *vars,
-                "io.vertx.grpc.GrpcWriteStream<$input_type$> $lower_method_name$(\n"
-                "    io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>> responseObserver)");
+            if (server_streaming) {
+              p->Print(
+                  *vars,
+                  "/*client_streaming && !impl_base && server_streaming*/io.vertx.grpc.GrpcWriteStream<$input_type$> $lower_method_name$(\n"
+                  "    io.vertx.grpc.GrpcReadStream<$output_type$> responseObserver)");
+            } else {
+              p->Print(
+                  *vars,
+                  "/*client_streaming && !impl_base && !server_streaming*/io.vertx.grpc.GrpcWriteStream<$input_type$> $lower_method_name$(\n"
+                  "    io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>> responseObserver)");
+            }
           }
         } else {
           // Server streaming or simple RPC
-          p->Print(
-              *vars,
-              "void $lower_method_name$($input_type$ request,\n"
-              "    io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>> responseObserver)");
+          if (server_streaming) {
+            if (impl_base || interface) {
+              p->Print(
+                  *vars,
+                  "/*!client_streaming && server_streaming*/void $lower_method_name$($input_type$ request,\n"
+                  "    io.vertx.grpc.GrpcWriteStream<$output_type$> responseObserver)");
+            } else {
+              p->Print(
+                  *vars,
+                  "/*!client_streaming && server_streaming*/void $lower_method_name$($input_type$ request,\n"
+                  "    io.vertx.grpc.GrpcReadStream<$output_type$> responseObserver)");
+            }
+          } else {
+            p->Print(
+                *vars,
+                "/*!client_streaming && !server_streaming*/void $lower_method_name$($input_type$ request,\n"
+                "    io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>> responseObserver)");
+          }
         }
         break;
     }
@@ -719,15 +747,29 @@ static void PrintStub(
           break;
         case VERTX_CALL:
           if (client_streaming) {
-            p->Print(
-                *vars,
-                "final $StreamObserver$<$input_type$> observer = asyncUnimplementedStreamingCall($method_field_name$, $service_class_name$.toObserver(responseObserver));\n"
-                "\n"
-                "return io.vertx.grpc.GrpcReadStream.create(observer);\n");
+            if (server_streaming) {
+              p->Print(
+                  *vars,
+                  "final $StreamObserver$<$input_type$> observer = asyncUnimplementedStreamingCall($method_field_name$, responseObserver.observer());\n"
+                  "\n"
+                  "return io.vertx.grpc.GrpcReadStream.create(observer);\n");
+            } else {
+              p->Print(
+                  *vars,
+                  "final $StreamObserver$<$input_type$> observer = asyncUnimplementedStreamingCall($method_field_name$, $service_class_name$.toObserver(responseObserver));\n"
+                  "\n"
+                  "return io.vertx.grpc.GrpcReadStream.create(observer);\n");
+            }
           } else {
-            p->Print(
-                *vars,
-                "asyncUnimplementedUnaryCall($method_field_name$, $service_class_name$.toObserver(responseObserver));\n");
+            if (server_streaming) {
+              p->Print(
+                  *vars,
+                  "asyncUnimplementedUnaryCall($method_field_name$, responseObserver.observer());\n");
+            } else {
+              p->Print(
+                  *vars,
+                  "asyncUnimplementedUnaryCall($method_field_name$, $service_class_name$.toObserver(responseObserver));\n");
+            }
           }
           break;
         default:
@@ -816,7 +858,7 @@ static void PrintStub(
             p->Print(
                 *vars,
                 "$calls_method$(\n"
-                "    getChannel().newCall($method_field_name$, getCallOptions()), $param0$$service_class_name$.toObserver($param1$))");
+                "    getChannel().newCall($method_field_name$, getCallOptions()), $param0$$param1$.observer())");
           } else {
             p->Print(
                 *vars,
@@ -945,32 +987,27 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
         p->Print(
             *vars,
             "case $method_id_name$:\n"
-            "  serviceImpl.$lower_method_name$(($input_type$) request,\n"
-            "      (io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>>) ar -> {\n"
-            "        if (ar.succeeded()) {\n");
-        if (!method->server_streaming()) {
+            "  serviceImpl.$lower_method_name$(($input_type$) request,\n");
+        if (method->server_streaming()) {
+          p->Print(
+            *vars,
+            "      (io.vertx.grpc.GrpcWriteStream<$output_type$>) io.vertx.grpc.GrpcWriteStream.create(responseObserver));\n");
+        } else {
           // act like a future
           p->Print(
-              *vars,
-              "          (($StreamObserver$<$output_type$>) responseObserver).onNext(ar.result());\n"
-              "          responseObserver.onCompleted();\n");
-        } else {
-          p->Print(
-              *vars,
-              "          final $output_type$ value = ar.result();\n"
-              "          if (value == null) {\n"
-              "            responseObserver.onCompleted();\n"
-              "          } else {\n"
-              "            (($StreamObserver$<$output_type$>) responseObserver).onNext(value);\n"
-              "          }\n");
-        }
-        p->Print(
             *vars,
+            "      (io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>>) ar -> {\n"
+            "        if (ar.succeeded()) {\n"
+            "          (($StreamObserver$<$output_type$>) responseObserver).onNext(ar.result());\n"
+            "          responseObserver.onCompleted();\n"
             "        } else {\n"
             "          responseObserver.onError(ar.cause());\n"
             "        }\n"
-            "      });\n"
-            "  break;\n");
+            "      });\n");
+        }
+        p->Print(
+          *vars,
+          "  break;\n");
         break;
       default:
         p->Print(
@@ -1017,32 +1054,25 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
         p->Print(
             *vars,
             "case $method_id_name$:\n"
-            "  return ($StreamObserver$<Req>) serviceImpl.$lower_method_name$(\n"
-            "      (io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>>) ar -> {\n"
-            "        if (ar.succeeded()) {\n");
+            "  return ($StreamObserver$<Req>) serviceImpl.$lower_method_name$(\n");
 
-        if (!method->server_streaming()) {
+        if (method->server_streaming()) {
+          p->Print(
+            *vars,
+            "      (io.vertx.grpc.GrpcWriteStream<$output_type$>) io.vertx.grpc.GrpcWriteStream.create(responseObserver)).observer();\n");
+        } else {
           // act like a future
           p->Print(
-              *vars,
-              "          (($StreamObserver$<$output_type$>) responseObserver).onNext(ar.result());\n"
-              "          responseObserver.onCompleted();\n");
-        } else {
-          p->Print(
-              *vars,
-              "          final $output_type$ value = ar.result();\n"
-              "          if (value == null) {\n"
-              "            responseObserver.onCompleted();\n"
-              "          } else {\n"
-              "            (($StreamObserver$<$output_type$>) responseObserver).onNext(value);\n"
-              "          }\n");
-        }
-        p->Print(
             *vars,
-              "        } else {\n"
-              "          responseObserver.onError(ar.cause());\n"
-              "        }\n"
-              "      }).observer();\n");
+            "      (io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>>) ar -> {\n"
+            "        if (ar.succeeded()) {\n"
+            "          (($StreamObserver$<$output_type$>) responseObserver).onNext(ar.result());\n"
+            "          responseObserver.onCompleted();\n"
+            "        } else {\n"
+            "          responseObserver.onError(ar.cause());\n"
+            "        }\n"
+            "      }).observer();\n");
+        }
         break;
       default:
         p->Print(
