@@ -677,7 +677,7 @@ static void PrintStub(
           if (impl_base || interface) {
             p->Print(
                 *vars,
-                "io.vertx.core.Handler<io.vertx.core.AsyncResult<$input_type$>> $lower_method_name$(\n"
+                "io.vertx.grpc.GrpcReadStream<$input_type$> $lower_method_name$(\n"
                 "    io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>> responseObserver)");
           } else {
             p->Print(
@@ -723,18 +723,7 @@ static void PrintStub(
                 *vars,
                 "final $StreamObserver$<$input_type$> observer = asyncUnimplementedStreamingCall($method_field_name$, $service_class_name$.toObserver(responseObserver));\n"
                 "\n"
-                "return ar -> {\n"
-                "  if (ar.succeeded()) {\n"
-                "    final $input_type$ value = ar.result();\n"
-                "    if (value != null) {\n"
-                "      observer.onNext(value);\n"
-                "    } else {\n"
-                "       observer.onCompleted();\n"
-                "    }\n"
-                "  } else {\n"
-                "    observer.onError(ar.cause());\n"
-                "  }\n"
-                "};\n");
+                "return io.vertx.grpc.GrpcReadStream.create(observer);\n");
           } else {
             p->Print(
                 *vars,
@@ -1028,7 +1017,7 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
         p->Print(
             *vars,
             "case $method_id_name$:\n"
-            "  return ($StreamObserver$<Req>) $service_class_name$.toObserver(serviceImpl.$lower_method_name$(\n"
+            "  return ($StreamObserver$<Req>) serviceImpl.$lower_method_name$(\n"
             "      (io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>>) ar -> {\n"
             "        if (ar.succeeded()) {\n");
 
@@ -1053,7 +1042,7 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
               "        } else {\n"
               "          responseObserver.onError(ar.cause());\n"
               "        }\n"
-              "      }));\n");
+              "      }).observer();\n");
         break;
       default:
         p->Print(
