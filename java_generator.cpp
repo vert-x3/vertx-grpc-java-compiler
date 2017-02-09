@@ -672,58 +672,56 @@ static void PrintStub(
             "    $input_type$ request)");
         break;
       case VERTX_CALL:
-        if (client_streaming) {
-          // Bidirectional streaming or client streaming
-          if (impl_base || interface) {
+        if (impl_base || interface) {
+          if (client_streaming) {
             if (server_streaming) {
               p->Print(
                   *vars,
-                  "/*client_streaming && impl_base && server_streaming*/io.vertx.grpc.GrpcReadStream<$input_type$> $lower_method_name$(\n"
-                  "    io.vertx.grpc.GrpcWriteStream<$output_type$> responseObserver)");
+                  "io.vertx.grpc.GrpcReadStream<$input_type$> $lower_method_name$(\n"
+                  "    io.vertx.grpc.GrpcWriteStream<$output_type$> response)");
             } else {
               p->Print(
                   *vars,
-                  "/*client_streaming && impl_base  && !server_streaming*/io.vertx.grpc.GrpcReadStream<$input_type$> $lower_method_name$(\n"
-                  "    io.vertx.core.Future<$output_type$> responseObserver)");
+                  "io.vertx.grpc.GrpcReadStream<$input_type$> $lower_method_name$(\n"
+                  "    io.vertx.core.Future<$output_type$> response)");
             }
           } else {
             if (server_streaming) {
               p->Print(
                   *vars,
-                  "/*client_streaming && !impl_base && server_streaming*/io.vertx.grpc.GrpcWriteStream<$input_type$> $lower_method_name$(\n"
-                  "    io.vertx.grpc.GrpcReadStream<$output_type$> responseObserver)");
+                  "void $lower_method_name$($input_type$ request,\n"
+                  "    io.vertx.grpc.GrpcWriteStream<$output_type$> response)");
             } else {
               p->Print(
                   *vars,
-                  "/*client_streaming && !impl_base && !server_streaming*/io.vertx.grpc.GrpcWriteStream<$input_type$> $lower_method_name$(\n"
-                  "    io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>> responseObserver)");
+                  "void $lower_method_name$($input_type$ request,\n"
+                  "    io.vertx.core.Future<$output_type$> response)");
             }
           }
         } else {
-          // Server streaming or simple RPC
-          if (server_streaming) {
-            if (impl_base || interface) {
+          if (client_streaming) {
+            if (server_streaming) {
               p->Print(
                   *vars,
-                  "/*!client_streaming && server_streaming*/void $lower_method_name$($input_type$ request,\n"
-                  "    io.vertx.grpc.GrpcWriteStream<$output_type$> responseObserver)");
+                  "io.vertx.grpc.GrpcWriteStream<$input_type$> $lower_method_name$(\n"
+                  "    io.vertx.grpc.GrpcReadStream<$output_type$> response)");
             } else {
               p->Print(
                   *vars,
-                  "/*!client_streaming && server_streaming*/void $lower_method_name$($input_type$ request,\n"
-                  "    io.vertx.grpc.GrpcReadStream<$output_type$> responseObserver)");
+                  "io.vertx.grpc.GrpcWriteStream<$input_type$> $lower_method_name$(\n"
+                  "    io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>> response)");
             }
           } else {
-            if (impl_base || interface) {
+            if (server_streaming) {
               p->Print(
                   *vars,
-                  "/*!client_streaming && impl_base && !server_streaming*/void $lower_method_name$($input_type$ request,\n"
-                  "    io.vertx.core.Future<$output_type$> responseObserver)");
+                  "void $lower_method_name$($input_type$ request,\n"
+                  "    io.vertx.grpc.GrpcReadStream<$output_type$> response)");
             } else {
               p->Print(
                   *vars,
-                  "/*!client_streaming && !impl_base && !server_streaming*/void $lower_method_name$($input_type$ request,\n"
-                  "    io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>> responseObserver)");
+                  "void $lower_method_name$($input_type$ request,\n"
+                  "    io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>> response)");
             }
           }
         }
@@ -757,25 +755,21 @@ static void PrintStub(
             if (server_streaming) {
               p->Print(
                   *vars,
-                  "final $StreamObserver$<$input_type$> observer = asyncUnimplementedStreamingCall($method_field_name$, responseObserver.observer());\n"
-                  "\n"
-                  "return io.vertx.grpc.GrpcReadStream.create(observer);\n");
+                  "return io.vertx.grpc.GrpcReadStream.create(asyncUnimplementedStreamingCall($method_field_name$, response.observer()));\n");
             } else {
               p->Print(
                   *vars,
-                  "final $StreamObserver$<$input_type$> observer = asyncUnimplementedStreamingCall($method_field_name$, $service_class_name$.toObserver(responseObserver.completer()));\n"
-                  "\n"
-                  "return io.vertx.grpc.GrpcReadStream.create(observer);\n");
+                  "return io.vertx.grpc.GrpcReadStream.create(asyncUnimplementedStreamingCall($method_field_name$, $service_class_name$.toObserver(response.completer())));\n");
             }
           } else {
             if (server_streaming) {
               p->Print(
                   *vars,
-                  "asyncUnimplementedUnaryCall($method_field_name$, responseObserver.observer());\n");
+                  "asyncUnimplementedUnaryCall($method_field_name$, response.observer());\n");
             } else {
               p->Print(
                   *vars,
-                  "asyncUnimplementedUnaryCall($method_field_name$, $service_class_name$.toObserver(responseObserver.completer()));\n");
+                  "asyncUnimplementedUnaryCall($method_field_name$, $service_class_name$.toObserver(response.completer()));\n");
             }
           }
           break;
@@ -839,21 +833,21 @@ static void PrintStub(
             if (client_streaming) {
               (*vars)["calls_method"] = "asyncBidiStreamingCall";
               (*vars)["param0"] = "";
-              (*vars)["param1"] = "responseObserver";
+              (*vars)["param1"] = "response";
             } else {
               (*vars)["calls_method"] = "asyncServerStreamingCall";
               (*vars)["param0"] = "request, ";
-              (*vars)["param1"] = "responseObserver";
+              (*vars)["param1"] = "response";
             }
           } else {
             if (client_streaming) {
               (*vars)["calls_method"] = "asyncClientStreamingCall";
               (*vars)["param0"] = "";
-              (*vars)["param1"] = "responseObserver";
+              (*vars)["param1"] = "response";
             } else {
               (*vars)["calls_method"] = "asyncUnaryCall";
               (*vars)["param0"] = "request, ";
-              (*vars)["param1"] = "responseObserver";
+              (*vars)["param1"] = "response";
             }
           }
           if (client_streaming) {
@@ -870,7 +864,7 @@ static void PrintStub(
             p->Print(
                 *vars,
                 "$calls_method$(\n"
-                "    getChannel().newCall($method_field_name$, getCallOptions()), $param0$$service_class_name$.toSingle($param1$))");
+                "    getChannel().newCall($method_field_name$, getCallOptions()), $param0$$service_class_name$.toObserver($param1$))");
           }
           if (client_streaming) {
             p->Print(
@@ -1277,29 +1271,11 @@ static void PrintService(const ServiceDescriptor* service,
     *vars,
     "private static <T> $StreamObserver$<T> toObserver(final io.vertx.core.Handler<io.vertx.core.AsyncResult<T>> handler) {\n"
     "  return new $StreamObserver$<T>() {\n"
-    "    @Override\n"
-    "    public void onNext(T value) {\n"
-    "      handler.handle(io.vertx.core.Future.succeededFuture(value));\n"
-    "    }\n"
-    "\n"
-    "    @Override\n"
-    "    public void onError(Throwable t) {\n"
-    "      handler.handle(io.vertx.core.Future.failedFuture(t));\n"
-    "    }\n"
-    "\n"
-    "    @Override\n"
-    "    public void onCompleted() {\n"
-    "      handler.handle(io.vertx.core.Future.succeededFuture());\n"
-    "    }\n"
-    "  };\n"
-    "}\n\n"
-    "private static <T> $StreamObserver$<T> toSingle(final io.vertx.core.Handler<io.vertx.core.AsyncResult<T>> handler) {\n"
-    "  return new $StreamObserver$<T>() {\n"
     "    private boolean resolved = false;\n"
     "    @Override\n"
     "    public void onNext(T value) {\n"
     "      if (resolved) {\n"
-    "        throw new RuntimeException(\"Already Resolved\");\n"
+    "        throw new IllegalStateException(\"Already Resolved\");\n"
     "      }\n"
     "      resolved = true;\n"
     "      handler.handle(io.vertx.core.Future.succeededFuture(value));\n"
@@ -1312,6 +1288,11 @@ static void PrintService(const ServiceDescriptor* service,
     "\n"
     "    @Override\n"
     "    public void onCompleted() {\n"
+    "      if (resolved) {\n"
+    "        throw new IllegalStateException(\"Already Resolved\");\n"
+    "      }\n"
+    "      resolved = true;\n"
+    "      handler.handle(io.vertx.core.Future.succeededFuture());\n"
     "    }\n"
     "  };\n"
     "}\n\n");

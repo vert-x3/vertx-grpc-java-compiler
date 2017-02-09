@@ -19,10 +19,10 @@ ifeq ($(CROSS_TRIPLE), x86_64-apple-darwin14)
 endif
 
 $(CROSS_TRIPLE)/protoc-gen-grpc-java.exe: $(OBJS)
-	$(CXX) -o $(CROSS_TRIPLE)/protoc-gen-grpc-java.exe $(OBJS) $(LDFLAGS) -L$(CROSS_TRIPLE) -lprotoc -lprotobuf $(LDEXTRA)
+	$(CXX) -W -o $(CROSS_TRIPLE)/protoc-gen-grpc-java.exe $(OBJS) $(LDFLAGS) -L$(CROSS_TRIPLE) -lprotoc -lprotobuf $(LDEXTRA)
 
 $(CROSS_TRIPLE)/%.o: ./%.cpp
-	$(CXX) -Iprotobuf-3.1.0/src -x c++ -c -DGRPC_VERSION=1.1.1 --std=c++0x -o $@ $< $(CXXFLAGS) 
+	$(CXX) -W -Iprotobuf-3.1.0/src -x c++ -c -DGRPC_VERSION=1.1.1 --std=c++0x -o $@ $< $(CXXFLAGS) 
 
 .PHONY: clean
 
