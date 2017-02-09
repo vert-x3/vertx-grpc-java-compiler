@@ -703,8 +703,8 @@ static void PrintStub(
             if (server_streaming) {
               p->Print(
                   *vars,
-                  "io.vertx.grpc.GrpcWriteStream<$input_type$> $lower_method_name$(\n"
-                  "    io.vertx.grpc.GrpcReadStream<$output_type$> response)");
+                  "void $lower_method_name$(\n"
+                  "    io.vertx.core.Handler<io.vertx.grpc.GrpcExchange<$output_type$, $input_type$>> handler)");
             } else {
               p->Print(
                   *vars,
@@ -755,7 +755,7 @@ static void PrintStub(
             if (server_streaming) {
               p->Print(
                   *vars,
-                  "return io.vertx.grpc.GrpcReadStream.create(asyncUnimplementedStreamingCall($method_field_name$, response.observer()));\n");
+                  "return io.vertx.grpc.GrpcReadStream.create(asyncUnimplementedStreamingCall($method_field_name$, response.writeObserver()));\n");
             } else {
               p->Print(
                   *vars,
@@ -765,7 +765,7 @@ static void PrintStub(
             if (server_streaming) {
               p->Print(
                   *vars,
-                  "asyncUnimplementedUnaryCall($method_field_name$, response.observer());\n");
+                  "asyncUnimplementedUnaryCall($method_field_name$, response.writeObserver());\n");
             } else {
               p->Print(
                   *vars,
@@ -829,51 +829,36 @@ static void PrintStub(
               "    getChannel().newCall($method_field_name$, getCallOptions()), request);\n");
           break;
         case VERTX_CALL:
-          if (server_streaming) {
-            if (client_streaming) {
+          if (client_streaming) {
+            if (server_streaming) {
               (*vars)["calls_method"] = "asyncBidiStreamingCall";
-              (*vars)["param0"] = "";
-              (*vars)["param1"] = "response";
+              p->Print(
+                *vars,
+                "final io.vertx.grpc.GrpcReadStream<$output_type$> readStream =\n"
+                "    io.vertx.grpc.GrpcReadStream.<$output_type$>create();\n"
+                "handler.handle(io.vertx.grpc.GrpcExchange.create(readStream, $calls_method$(\n"
+                "    getChannel().newCall($method_field_name$, getCallOptions()), readStream.readObserver())));\n");
             } else {
-              (*vars)["calls_method"] = "asyncServerStreamingCall";
-              (*vars)["param0"] = "request, ";
-              (*vars)["param1"] = "response";
+              (*vars)["calls_method"] = "asyncClientStreamingCall";
+              p->Print(
+                *vars,
+                "return io.vertx.grpc.GrpcWriteStream.create($calls_method$(\n"
+                "    getChannel().newCall($method_field_name$, getCallOptions()), $service_class_name$.toObserver(response)));\n");
             }
           } else {
-            if (client_streaming) {
-              (*vars)["calls_method"] = "asyncClientStreamingCall";
-              (*vars)["param0"] = "";
-              (*vars)["param1"] = "response";
+            if (server_streaming) {
+              (*vars)["calls_method"] = "asyncServerStreamingCall";
+              p->Print(
+                  *vars,
+                  "$calls_method$(\n"
+                  "    getChannel().newCall($method_field_name$, getCallOptions()), request, response.readObserver());\n");
             } else {
               (*vars)["calls_method"] = "asyncUnaryCall";
-              (*vars)["param0"] = "request, ";
-              (*vars)["param1"] = "response";
+              p->Print(
+                  *vars,
+                  "$calls_method$(\n"
+                  "    getChannel().newCall($method_field_name$, getCallOptions()), request, $service_class_name$.toObserver(response));\n");
             }
-          }
-          if (client_streaming) {
-            p->Print(
-                *vars,
-                "return io.vertx.grpc.GrpcWriteStream.create(");
-          }
-          if (server_streaming) {
-            p->Print(
-                *vars,
-                "$calls_method$(\n"
-                "    getChannel().newCall($method_field_name$, getCallOptions()), $param0$$param1$.observer())");
-          } else {
-            p->Print(
-                *vars,
-                "$calls_method$(\n"
-                "    getChannel().newCall($method_field_name$, getCallOptions()), $param0$$service_class_name$.toObserver($param1$))");
-          }
-          if (client_streaming) {
-            p->Print(
-                *vars,
-                ");\n");
-          } else {
-            p->Print(
-                *vars,
-                ";\n");            
           }
           break;
       }
@@ -1060,7 +1045,7 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
         if (method->server_streaming()) {
           p->Print(
             *vars,
-            "      (io.vertx.grpc.GrpcWriteStream<$output_type$>) io.vertx.grpc.GrpcWriteStream.create(responseObserver)).observer();\n");
+            "      (io.vertx.grpc.GrpcWriteStream<$output_type$>) io.vertx.grpc.GrpcWriteStream.create(responseObserver)).readObserver();\n");
         } else {
           // act like a future
           p->Print(
@@ -1072,7 +1057,7 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
             "        } else {\n"
             "          responseObserver.onError(ar.cause());\n"
             "        }\n"
-            "      })).observer();\n");
+            "      })).readObserver();\n");
         }
         break;
       default:
