@@ -703,13 +703,13 @@ static void PrintStub(
             if (server_streaming) {
               p->Print(
                   *vars,
-                  "void $lower_method_name$(\n"
-                  "    io.vertx.core.Handler<io.vertx.grpc.GrpcBidiExchange<$output_type$, $input_type$>> handler)");
+                  "void $lower_method_name$(io.vertx.core.Handler<\n"
+                  "    io.vertx.grpc.GrpcBidiExchange<$output_type$, $input_type$>> handler)");
             } else {
               p->Print(
                   *vars,
-                  "io.vertx.grpc.GrpcWriteStream<$input_type$> $lower_method_name$(\n"
-                  "    io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>> response)");
+                  "void $lower_method_name$(io.vertx.core.Handler<\n"
+                  "    io.vertx.grpc.GrpcUniExchange<$input_type$, $output_type$>> handler)");
             }
           } else {
             if (server_streaming) {
@@ -835,15 +835,17 @@ static void PrintStub(
               p->Print(
                 *vars,
                 "final io.vertx.grpc.GrpcReadStream<$output_type$> readStream =\n"
-                "    io.vertx.grpc.GrpcReadStream.<$output_type$>create();\n"
+                "    io.vertx.grpc.GrpcReadStream.<$output_type$>create();\n\n"
                 "handler.handle(io.vertx.grpc.GrpcBidiExchange.create(readStream, $calls_method$(\n"
                 "    getChannel().newCall($method_field_name$, getCallOptions()), readStream.readObserver())));\n");
             } else {
               (*vars)["calls_method"] = "asyncClientStreamingCall";
               p->Print(
                 *vars,
-                "return io.vertx.grpc.GrpcWriteStream.create($calls_method$(\n"
-                "    getChannel().newCall($method_field_name$, getCallOptions()), $service_class_name$.toObserver(response)));\n");
+                "final io.vertx.grpc.GrpcReadStream<$output_type$> readStream =\n"
+                "    io.vertx.grpc.GrpcReadStream.<$output_type$>create();\n\n"
+                "handler.handle(io.vertx.grpc.GrpcUniExchange.create(readStream, $calls_method$(\n"
+                "    getChannel().newCall($method_field_name$, getCallOptions()), readStream.readObserver())));\n");
             }
           } else {
             if (server_streaming) {
