@@ -704,7 +704,7 @@ static void PrintStub(
               p->Print(
                   *vars,
                   "void $lower_method_name$(\n"
-                  "    io.vertx.core.Handler<io.vertx.grpc.GrpcExchange<$output_type$, $input_type$>> handler)");
+                  "    io.vertx.core.Handler<io.vertx.grpc.GrpcBidiExchange<$output_type$, $input_type$>> handler)");
             } else {
               p->Print(
                   *vars,
@@ -716,7 +716,7 @@ static void PrintStub(
               p->Print(
                   *vars,
                   "void $lower_method_name$($input_type$ request,\n"
-                  "    io.vertx.grpc.GrpcReadStream<$output_type$> response)");
+                  "    io.vertx.core.Handler<io.vertx.grpc.GrpcReadStream<$output_type$>> handler)");
             } else {
               p->Print(
                   *vars,
@@ -836,7 +836,7 @@ static void PrintStub(
                 *vars,
                 "final io.vertx.grpc.GrpcReadStream<$output_type$> readStream =\n"
                 "    io.vertx.grpc.GrpcReadStream.<$output_type$>create();\n"
-                "handler.handle(io.vertx.grpc.GrpcExchange.create(readStream, $calls_method$(\n"
+                "handler.handle(io.vertx.grpc.GrpcBidiExchange.create(readStream, $calls_method$(\n"
                 "    getChannel().newCall($method_field_name$, getCallOptions()), readStream.readObserver())));\n");
             } else {
               (*vars)["calls_method"] = "asyncClientStreamingCall";
@@ -850,8 +850,12 @@ static void PrintStub(
               (*vars)["calls_method"] = "asyncServerStreamingCall";
               p->Print(
                   *vars,
+                  "final io.vertx.grpc.GrpcReadStream<$output_type$> readStream =\n"
+                  "    io.vertx.grpc.GrpcReadStream.<$output_type$>create();\n"
+                  "\n"
+                  "handler.handle(readStream);\n"
                   "$calls_method$(\n"
-                  "    getChannel().newCall($method_field_name$, getCallOptions()), request, response.readObserver());\n");
+                  "    getChannel().newCall($method_field_name$, getCallOptions()), request, readStream.readObserver());\n");
             } else {
               (*vars)["calls_method"] = "asyncUnaryCall";
               p->Print(
