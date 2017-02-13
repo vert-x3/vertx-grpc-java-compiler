@@ -677,12 +677,12 @@ static void PrintStub(
             if (server_streaming) {
               p->Print(
                   *vars,
-                  "io.vertx.grpc.GrpcReadStream<$input_type$> $lower_method_name$(\n"
-                  "    io.vertx.grpc.GrpcWriteStream<$output_type$> response)");
+                  "void $lower_method_name$(\n"
+                  "    io.vertx.grpc.GrpcBidiExchange<$input_type$, $output_type$> exchange)");
             } else {
               p->Print(
                   *vars,
-                  "io.vertx.grpc.GrpcReadStream<$input_type$> $lower_method_name$(\n"
+                  "void $lower_method_name$(io.vertx.grpc.GrpcReadStream<$input_type$> request,\n"
                   "    io.vertx.core.Future<$output_type$> response)");
             }
           } else {
@@ -755,11 +755,11 @@ static void PrintStub(
             if (server_streaming) {
               p->Print(
                   *vars,
-                  "return io.vertx.grpc.GrpcReadStream.create(asyncUnimplementedStreamingCall($method_field_name$, response.writeObserver()));\n");
+                  "exchange.setReadObserver(asyncUnimplementedStreamingCall($method_field_name$, exchange.writeObserver()));\n");
             } else {
               p->Print(
                   *vars,
-                  "return io.vertx.grpc.GrpcReadStream.create(asyncUnimplementedStreamingCall($method_field_name$, $service_class_name$.toObserver(response.completer())));\n");
+                  "request.setReadObserver(asyncUnimplementedStreamingCall($method_field_name$, $service_class_name$.toObserver(response.completer())));\n");
             }
           } else {
             if (server_streaming) {
@@ -1034,6 +1034,7 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
     if (!method->client_streaming()) {
       continue;
     }
+    (*vars)["idx"] = std::to_string(i);
     (*vars)["method_id_name"] = MethodIdFieldName(method);
     (*vars)["lower_method_name"] = LowerMethodName(method);
     (*vars)["input_type"] = MessageFullJavaName(generate_nano,
@@ -1043,27 +1044,31 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
 
     switch(call_type) {
       case VERTX_CALL:
-        p->Print(
-            *vars,
-            "case $method_id_name$:\n"
-            "  return ($StreamObserver$<Req>) serviceImpl.$lower_method_name$(\n");
-
         if (method->server_streaming()) {
           p->Print(
             *vars,
-            "      (io.vertx.grpc.GrpcWriteStream<$output_type$>) io.vertx.grpc.GrpcWriteStream.create(responseObserver)).readObserver();\n");
+            "case $method_id_name$:\n"
+            "  io.vertx.grpc.GrpcReadStream<$input_type$> request$idx$ = io.vertx.grpc.GrpcReadStream.<$input_type$>create();\n"
+            "  serviceImpl.$lower_method_name$(\n"
+            "     io.vertx.grpc.GrpcBidiExchange.<$input_type$, $output_type$>create(\n"
+            "       request$idx$,\n"
+            "       (io.grpc.stub.StreamObserver<$output_type$>) responseObserver));\n"
+            "  return ($StreamObserver$<Req>) request$idx$.readObserver();\n");
         } else {
           // act like a future
           p->Print(
             *vars,
-            "      (io.vertx.core.Future<$output_type$>) io.vertx.core.Future.<$output_type$>future().setHandler(ar -> {\n"
-            "        if (ar.succeeded()) {\n"
-            "          (($StreamObserver$<$output_type$>) responseObserver).onNext(ar.result());\n"
-            "          responseObserver.onCompleted();\n"
-            "        } else {\n"
-            "          responseObserver.onError(ar.cause());\n"
-            "        }\n"
-            "      })).readObserver();\n");
+            "case $method_id_name$:\n"
+            "  io.vertx.grpc.GrpcReadStream<$input_type$> request$idx$ = io.vertx.grpc.GrpcReadStream.<$input_type$>create();\n"
+            "  serviceImpl.$lower_method_name$(request$idx$, (io.vertx.core.Future<$output_type$>) io.vertx.core.Future.<$output_type$>future().setHandler(ar -> {\n"
+            "    if (ar.succeeded()) {\n"
+            "      (($StreamObserver$<$output_type$>) responseObserver).onNext(ar.result());\n"
+            "      responseObserver.onCompleted();\n"
+            "    } else {\n"
+            "      responseObserver.onError(ar.cause());\n"
+            "    }\n"
+            "  }));\n"
+            "  return ($StreamObserver$<Req>) request$idx$.readObserver();\n");
         }
         break;
       default:
@@ -1274,13 +1279,17 @@ static void PrintService(const ServiceDescriptor* service,
     "\n"
     "    @Override\n"
     "    public void onError(Throwable t) {\n"
+    "      if (resolved) {\n"
+    "        throw new IllegalStateException(\"Already Resolved\");\n"
+    "      }\n"
+    "      resolved = true;\n"
     "      handler.handle(io.vertx.core.Future.failedFuture(t));\n"
     "    }\n"
     "\n"
     "    @Override\n"
     "    public void onCompleted() {\n"
     "      if (resolved) {\n"
-    "        throw new IllegalStateException(\"Already Resolved\");\n"
+    "        return;\n"
     "      }\n"
     "      resolved = true;\n"
     "      handler.handle(io.vertx.core.Future.succeededFuture());\n"
