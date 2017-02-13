@@ -1,5 +1,7 @@
 #!/bin/sh
 set -e
+# create the base cross compiler image
+docker build . -t vertx-grpc
 
 # Linux64
 docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-linux-gnu -it vertx-grpc ./build-protobuf.sh
