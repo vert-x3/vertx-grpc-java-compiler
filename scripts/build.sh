@@ -2,7 +2,7 @@
 set -e
 mkdir -p target
 # create the base cross compiler image
-docker build . -t vertx-grpc
+# docker build . -t vertx-grpc
 
 # Linux64
 docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-linux-gnu -it vertx-grpc ./scripts/build-protobuf.sh

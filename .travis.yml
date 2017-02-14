@@ -12,6 +12,13 @@ before_install:
   - mkdir -p target
   - docker build -t vertx-grpc .
 
+cache:
+  directories:
+  - target/x86_64-linux-gnu/protobuf-3.1.0
+  - target/i686-w64-mingw32/protobuf-3.1.0
+  - target/x86_64-w64-mingw32/protobuf-3.1.0
+  - target/x86_64-apple-darwin/protobuf-3.1.0
+
 install:
   - docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-linux-gnu -it vertx-grpc ./scripts/build-protobuf.sh
   - docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=i686-w64-mingw32 -it vertx-grpc ./scripts/build-protobuf.sh
@@ -26,7 +33,7 @@ script:
 
 after_success:
   if [[ "$(mvn org.apache.maven.plugins:maven-help-plugin:evaluate -Dexpression=project.version -B | grep -v '\[')" =~ .*SNAPSHOT ]] && [[ "${TRAVIS_BRANCH}" = "master" ]] && [[ "${TRAVIS_PULL_REQUEST}" = "false" ]]; then
-    mvn deploy
+    mvn deploy -Dmaven.test.skip=true
   fi
 
 env:
