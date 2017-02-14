@@ -2,6 +2,6 @@ if [ -f ./target/x86_64-linux-gnu/protoc-gen-grpc-java.exe ] && [ -f ./target/i6
   PROJECT_VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:evaluate -Dexpression=project.version -B | grep -v '\[')
   
   if [[ "${PROJECT_VERSION}" =~ .*SNAPSHOT ]] && [[ "${TRAVIS_BRANCH}" = "master" ]] && [[ "${TRAVIS_PULL_REQUEST}" = "false" ]]; then
-    mvn clean deploy -DskipTests -B;
+    mvn deploy
   fi
 fi
