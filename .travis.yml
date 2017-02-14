@@ -33,7 +33,7 @@ script:
 
 after_success:
   if [[ "$(mvn org.apache.maven.plugins:maven-help-plugin:evaluate -Dexpression=project.version -B | grep -v '\[')" =~ .*SNAPSHOT ]] && [[ "${TRAVIS_BRANCH}" = "master" ]] && [[ "${TRAVIS_PULL_REQUEST}" = "false" ]]; then
-    mvn deploy -Dmaven.test.skip=true
+    mvn deploy -Dmaven.test.skip=true;
   fi
 
 env:
