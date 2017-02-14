@@ -1,5 +1,7 @@
 sudo: required
 
+language: cpp
+
 services:
   - docker
 
@@ -11,6 +13,11 @@ install:
 
 script:
   - docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=${CROSS_TRIPLE} -it vertx-grpc make
+
+after_success:
+  - mkdir -p out
+  - ./x86_64-linux-gnu/protoc --plugin=protoc-gen-grpc-java=./x86_64-linux-gnu/protoc-gen-grpc-java.exe --grpc-java_out="out" --proto_path="test" "helloworld.proto"
+  - ./x86_64-linux-gnu/protoc --plugin=protoc-gen-grpc-java=./x86_64-linux-gnu/protoc-gen-grpc-java.exe --grpc-java_out="out" --proto_path="test" "streaming.proto"
 
 env:
   - CROSS_TRIPLE=x86_64-linux-gnu

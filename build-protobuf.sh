@@ -32,3 +32,5 @@ cp src/libprotoc.la ../${CROSS_TRIPLE}
 
 cp src/.libs/libprotobuf.a ../${CROSS_TRIPLE}
 cp src/libprotobuf.la ../${CROSS_TRIPLE}
+
+cp src/protoc ../${CROSS_TRIPLE}
