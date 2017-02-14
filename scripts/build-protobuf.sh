@@ -2,6 +2,10 @@
 set -e
 PB_VERSION=3.1.0
 
+# init
+mkdir -p target
+cd target
+
 if [ "${CROSS_TRIPLE}" = "x86_64-apple-darwin14" ]
 then
     $(/usr/x86_64-apple-darwin14/bin/osxcross-env)
@@ -13,7 +17,7 @@ then
     rm -rf protobuf-${PB_VERSION}
 fi
     
-tar xvf protobuf-${PB_VERSION}.tar.gz
+tar xvf ../protobuf-${PB_VERSION}.tar.gz
 
 cd protobuf-${PB_VERSION}
 ./autogen.sh
@@ -35,3 +39,5 @@ cp src/libprotobuf.la ../${CROSS_TRIPLE}
 
 cp src/protoc ../${CROSS_TRIPLE} || true
 cp src/protoc.exe ../${CROSS_TRIPLE} || true
+
+cd ..

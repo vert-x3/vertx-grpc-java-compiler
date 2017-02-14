@@ -1,9 +1,4 @@
-*.o
-*.exe
-protobuf-3.1.0
+target
 .vscode
 out
 versions
-*.exe
-*.a
-*.la

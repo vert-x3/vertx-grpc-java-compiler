@@ -3,7 +3,12 @@
         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>io.vertx</groupId>
+  <parent>
+    <groupId>io.vertx</groupId>
+    <artifactId>vertx-ext-parent</artifactId>
+    <version>24</version>
+  </parent>
+
   <artifactId>protoc-gen-grpc-java</artifactId>
   <packaging>pom</packaging>
   <version>1.1.1</version>
@@ -29,22 +34,22 @@
       <artifacts>
         <artifact>
         <classifier>linux-x86_64</classifier>
-        <file>${basedir}/x86_64-linux-gnu/protoc-gen-grpc-java.exe</file>
+        <file>${basedir}/target/x86_64-linux-gnu/protoc-gen-grpc-java.exe</file>
         <type>exe</type>
         </artifact>
         <artifact>
         <classifier>windows-x86_64</classifier>
-        <file>${basedir}/x86_64-w64-mingw32/protoc-gen-grpc-java.exe</file>
+        <file>${basedir}/target/x86_64-w64-mingw32/protoc-gen-grpc-java.exe</file>
         <type>exe</type>
         </artifact>
         <artifact>
         <classifier>windows-x86_32</classifier>
-        <file>${basedir}/i686-w64-mingw32/protoc-gen-grpc-java.exe</file>
+        <file>${basedir}/target/i686-w64-mingw32/protoc-gen-grpc-java.exe</file>
         <type>exe</type>
         </artifact>
         <artifact>
         <classifier>osx-x86_64</classifier>
-        <file>${basedir}/x86_64-apple-darwin14/protoc-gen-grpc-java.exe</file>
+        <file>${basedir}/target/x86_64-apple-darwin14/protoc-gen-grpc-java.exe</file>
         <type>exe</type>
         </artifact>
       </artifacts>

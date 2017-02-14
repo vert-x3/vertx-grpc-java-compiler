@@ -10,15 +10,16 @@ services:
 
 before_install:
   - docker build -t vertx-grpc .
+  - mkdir -p target
 
 install:
-  - docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=${CROSS_TRIPLE} -it vertx-grpc ./build-protobuf.sh
+  - docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=${CROSS_TRIPLE} -it vertx-grpc ./scripts/build-protobuf.sh
 
 script:
   - docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=${CROSS_TRIPLE} -it vertx-grpc make
 
 after_success:
-  - ./deploy.sh
+  - ./scripts/deploy.sh
 
 env:
   global:

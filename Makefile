@@ -1,4 +1,4 @@
-OBJS = $(CROSS_TRIPLE)/java_generator.o $(CROSS_TRIPLE)/java_plugin.o
+OBJS = target/$(CROSS_TRIPLE)/java_generator.o target/$(CROSS_TRIPLE)/java_plugin.o
 
 LDFLAGS := -static-libgcc -static-libstdc++ -Wl,-Bstatic
 LDEXTRA := -s
@@ -18,13 +18,16 @@ ifeq ($(CROSS_TRIPLE), x86_64-apple-darwin14)
     LDEXTRA := -lc++ -lc++abi
 endif
 
-$(CROSS_TRIPLE)/protoc-gen-grpc-java.exe: $(OBJS)
-	$(CXX) -W -o $(CROSS_TRIPLE)/protoc-gen-grpc-java.exe $(OBJS) $(LDFLAGS) -L$(CROSS_TRIPLE) -lprotoc -lprotobuf $(LDEXTRA)
+target/$(CROSS_TRIPLE)/protoc-gen-grpc-java.exe: init $(OBJS)
+	$(CXX) -W -o target/$(CROSS_TRIPLE)/protoc-gen-grpc-java.exe $(OBJS) $(LDFLAGS) -Ltarget/$(CROSS_TRIPLE) -lprotoc -lprotobuf $(LDEXTRA)
 
-$(CROSS_TRIPLE)/%.o: ./%.cpp
-	$(CXX) -W -Iprotobuf-3.1.0/src -x c++ -c -DGRPC_VERSION=1.1.1 --std=c++0x -o $@ $< $(CXXFLAGS) 
+target/$(CROSS_TRIPLE)/%.o: src/main/cpp/%.cpp
+	$(CXX) -W -Itarget/protobuf-3.1.0/src -x c++ -c -DGRPC_VERSION=1.1.1 --std=c++0x -o $@ $< $(CXXFLAGS) 
 
 .PHONY: clean
 
+init:
+	@mkdir -p target
+
 clean:
-	@rm -f $(CROSS_TRIPLE)/*.o $(CROSS_TRIPLE)/protoc-gen-grpc-java.exe
+	@rm -f target
