@@ -9,7 +9,6 @@ services:
   - docker
 
 before_install:
-  - cp .travis.maven.settings.xml $HOME/.m2/settings.xml
   - mkdir -p target
   - docker build -t vertx-grpc .
 
@@ -34,6 +33,7 @@ script:
 
 after_success:
   if [[ "$(mvn org.apache.maven.plugins:maven-help-plugin:evaluate -Dexpression=project.version -B | grep -v '\[')" =~ .*SNAPSHOT ]] && [[ "${TRAVIS_BRANCH}" = "master" ]] && [[ "${TRAVIS_PULL_REQUEST}" = "false" ]]; then
+    cp .travis.maven.settings.xml $HOME/.m2/settings.xml;
     mvn deploy -Dmaven.test.skip=true;
   fi
 
