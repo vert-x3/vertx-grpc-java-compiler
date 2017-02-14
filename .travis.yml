@@ -1,43 +1,41 @@
 sudo: required
-
 language: java
-
 jdk:
-  - oraclejdk8
-
+- oraclejdk8
 services:
-  - docker
-
+- docker
 before_install:
-  - mkdir -p target
-  - docker build -t vertx-grpc .
-
+- mkdir -p target
+- docker build -t vertx-grpc .
 cache:
   directories:
   - target/x86_64-linux-gnu/protobuf-3.1.0
   - target/i686-w64-mingw32/protobuf-3.1.0
   - target/x86_64-w64-mingw32/protobuf-3.1.0
   - target/x86_64-apple-darwin14/protobuf-3.1.0
-
 install:
-  - docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-linux-gnu -it vertx-grpc ./scripts/build-protobuf.sh
-  - docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=i686-w64-mingw32 -it vertx-grpc ./scripts/build-protobuf.sh
-  - docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-w64-mingw32 -it vertx-grpc ./scripts/build-protobuf.sh
-  - docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-apple-darwin -it vertx-grpc ./scripts/build-protobuf.sh
-
+- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-linux-gnu -it vertx-grpc
+  ./scripts/build-protobuf.sh
+- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=i686-w64-mingw32 -it vertx-grpc
+  ./scripts/build-protobuf.sh
+- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-w64-mingw32 -it vertx-grpc
+  ./scripts/build-protobuf.sh
+- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-apple-darwin -it vertx-grpc
+  ./scripts/build-protobuf.sh
 script:
-  - docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-linux-gnu -it vertx-grpc make
-  - docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=i686-w64-mingw32 -it vertx-grpc make
-  - docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-w64-mingw32 -it vertx-grpc make
-  - docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-apple-darwin -it vertx-grpc make
-
-after_success:
-  if [[ "$(mvn org.apache.maven.plugins:maven-help-plugin:evaluate -Dexpression=project.version -B | grep -v '\[')" =~ .*SNAPSHOT ]] && [[ "${TRAVIS_BRANCH}" = "master" ]] && [[ "${TRAVIS_PULL_REQUEST}" = "false" ]]; then
-    cp .travis.maven.settings.xml $HOME/.m2/settings.xml;
-    mvn deploy -Dmaven.test.skip=true;
-  fi
-
+- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-linux-gnu -it vertx-grpc
+  make
+- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=i686-w64-mingw32 -it vertx-grpc
+  make
+- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-w64-mingw32 -it vertx-grpc
+  make
+- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-apple-darwin -it vertx-grpc
+  make
+after_success: if [[ "$(mvn org.apache.maven.plugins:maven-help-plugin:evaluate -Dexpression=project.version
+  -B | grep -v '\[')" =~ .*SNAPSHOT ]] && [[ "${TRAVIS_BRANCH}" = "master" ]] && [[
+  "${TRAVIS_PULL_REQUEST}" = "false" ]]; then mvn -s .travis.maven.settings.xml -Dmaven.test.skip=true
+  deploy; fi
 env:
   global:
-    - secure: IjdignAqTlY9dvkCF4Z1tHyILrFBou+CoizRlS8L43B/vwTnZEEAgyfXG7zAkT1khje9c+TOqkEYWv+24VTgaX3mkgE1Am6nhqxYIG6ULdVVRJT5JAb8L//F3Sm+g/sS5guesUjT1wkEQ8ew6ZQ7/JoC/WKjqT7jklsX5g/6UsE=
-    - secure: jGsaoOfcLzrHgsfIJBLTnhxO6C+4+qRYRMsLG1oJY4DfPZOqa78ShrL50kns15WDt9PkVq4ddPfINJrA5PmN3e0evupPRRDh1mcbvDjK9d4Mldyl5IJxRKL2lvPenC+EujOegVr9jp7Jv6QwI9mc4SJjzwA65uB96K5zvbEmUF0=
+  - secure: O/2BxKvS1Sl91cZJ0qBnPa/bhGbYjMsVc5wLomo4cyLgrG3bxM6/NPsV/SmPUW//Tl3JEV0kZZWv1ye5fcsXZvDPH7rnivOKeBuJB6OJCq8GhJC1aymtrCQ8s8ZaQHJE3LhJJl+lo0WIRBtW4dffyrdtCuZHGwGoppzu+Xm/PruR3+U0H1A5nayVeony0Vloz3cd2SWPycDe2N5GFda7Ty7iA56/Kp+x/1loXI4rRiBTi54izHK4GxWHMldVIOiXAlTCh4NH0O5NGSRM2Eg0bGv09Beoy9D5BA7zaMHKzuskDHmduUrbbK/Keucsf40hxqwW+FCWj1ETSMkfOyakNXtfbbweLszFHdXugQTc0ZBiPPWFcKAMfJcKPvL4LFejTZoxLj2FsjhPIe7LyfmwgGm9SzNwQSNZPluv77qp1s966y29PwquqnEzJqd606HLtilJQ/ClqhLS8gqfRkkfE9Y8CeinMcsSFJHT8RsHAZrza199Uua8tCr7Vc6wVgzvFraxKPCvs782/GZBdq8ALtrQqNeuYawxf9wzpy/pM2YOagCxTDPKX3FHXK0hhUNH1vmJ+IgK704LXzFdyW4MuvzuLCqaIcb5obd6BmaBVHmrqSMrB4dEFGF3nkN/JUwL1i/10DiKKv5QWGA74wBvckQ2O+FuiLJgESon/bKffjQ=
+  - secure: AsLVkYaMUwlyaHVKs+zELV3eyl1E58LvuyGgPkamQ79AHyl9L6I1OD22echH3m+/RK8PacvTgQi3T7Wo8eN/EzzwLlJsRNu/PLTw+8O8PVcxtT161zUwb4Iy8y1zxq4G5PF1BwWz723TbaWbouDXa5zUzGsEuMCrwehQ+liI7OX5r7oNI1epietRlj9XHCtKR2KTDe+wr+y7V2UmU3SA814ZIUiCTJb5IuByMxCpzqeGR5iBFoYqt68Hw1SKXEv/+IhVx9EsZrXy9BIvSZH/EqC3oSIR4p7lsZXod4y24MnSdwtJRXOMwTpQivoV/qDL/xDprCmiagsr6cbeTCOKgVnIGRNkniswgZAHMVi3afBdkYCiglJKkiuwz64LMeHFFBq3UfmIOZrxYQhbw+A3k2W8bnK22l5X9HbT+Q6bwA8MVXYaS5z1AaWZWks8XL5N2hQT4mkReZVwMa8G1KrmLLyKcFDC8sX05UHKYXFE6gqyL1g6jWKjJNTrENqruNu7tuEwBu9chXl/DnU86dAu4itbKjEIb+ecX6BKPCEZXeQSgv55iTTGcuxrTglpJ1KGlA6EvOWNK3QUjKwawbwJntBXVQs+qpLOldDF8+ME7HIDd7Wmh+2VhYaZtdkB7fwMzYSo3jt3rVW3CV5jaoPOF2zn+KIlzCyaX/ATgNHGwoU=
