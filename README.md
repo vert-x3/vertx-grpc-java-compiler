@@ -1,8 +1,15 @@
 # vertx-grpc-java-compiler 1.1.1
 
-This is a custom protobuf compiled for java targetting the Vert.x programming model.
+This is a drop-in replacement gRPC compiler for java targetting the Vert.x programming model.
 
-Not much to see for now...
+Besides the normal generation that the official compiler does it adds 2 extra classes to the generation:
+
+* an abstract class <ServiceName>VertxImplBase
+* a final class <ServiceName>VertxStub
+
+These new classes follow the vert.x programming model closer than the generic ones so it will feel more
+natural to the end user to choose these instead of the official ones. There is no difference between the
+implementations since the new generated classes only wrap the vert.x types into the gRPC expected types.
 
 ## Build it
 
@@ -29,4 +36,3 @@ Note that sudo is used here since in Fedora docker requires it, if you don't nee
 ```
 mvn install
 ```
-
