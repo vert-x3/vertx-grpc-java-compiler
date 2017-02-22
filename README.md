@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/vert-x3/vertx-grpc-java-compiler.svg?branch=master)](https://travis-ci.org/vert-x3/vertx-grpc-java-compiler)
+
 # vertx-grpc-java-compiler 1.1.1
 
 This is a drop-in replacement gRPC compiler for java targetting the Vert.x programming model.
