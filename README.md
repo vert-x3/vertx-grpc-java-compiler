@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/vert-x3/vertx-grpc-java-compiler.svg?branch=master)](https://travis-ci.org/vert-x3/vertx-grpc-java-compiler)
 
-# vertx-grpc-java-compiler 1.1.1
+# vertx-grpc-java-compiler 1.1.2
 
 This is a drop-in replacement gRPC compiler for java targetting the Vert.x programming model.
 
@@ -38,3 +38,17 @@ Note that sudo is used here since in Fedora docker requires it, if you don't nee
 ```
 mvn install
 ```
+## Update the code
+
+The process is quite manual.
+
+1. Run a diff between the gRPC tags, replace the versions in the [link](https://github.com/grpc/grpc-java/compare/v1.1.1...v1.1.2)
+2. If there are changes in the CPP code try to apply the diff/manual merge
+3. Bump the versions on `pom.xml` and `Makefile` to match the new one.
+4. Build
+
+When bumping the `protobuf` dependency the following steps are required:
+
+1. Download the `tar.gz` file to the root of the project.
+2. Update travis to cache the new version.
+3. Update the `Makefile` to use the new version.
