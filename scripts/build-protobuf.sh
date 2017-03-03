@@ -54,6 +54,11 @@ if [ ! -f ${CROSS_TRIPLE}/protobuf-${PB_VERSION}/libprotoc.a ] || [ ! -f ${CROSS
     cp src/protoc ../../host/protoc
   fi
 
+  # clean so we save some space on the cache
+  cd ..
+  rm -Rf protobuf-${PB_VERSION} || true
+  cd ..
+
 fi
 
 cd ..
