@@ -6,30 +6,29 @@ services:
 - docker
 before_install:
 - mkdir -p target
-- docker build -t vertx-grpc .
 cache:
   directories:
-  - target/x86_64-linux-gnu/protobuf-3.1.0
-  - target/i686-w64-mingw32/protobuf-3.1.0
-  - target/x86_64-w64-mingw32/protobuf-3.1.0
-  - target/x86_64-apple-darwin14/protobuf-3.1.0
+  - target/x86_64-linux-gnu/protobuf-3.2.0
+  - target/i686-w64-mingw32/protobuf-3.2.0
+  - target/x86_64-w64-mingw32/protobuf-3.2.0
+  - target/x86_64-apple-darwin14/protobuf-3.2.0
 install:
-- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-linux-gnu -it vertx-grpc
+- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-linux-gnu -it multiarch/crossbuild
   ./scripts/build-protobuf.sh
-- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=i686-w64-mingw32 -it vertx-grpc
+- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=i686-w64-mingw32 -it multiarch/crossbuild
   ./scripts/build-protobuf.sh
-- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-w64-mingw32 -it vertx-grpc
+- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-w64-mingw32 -it multiarch/crossbuild
   ./scripts/build-protobuf.sh
-- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-apple-darwin -it vertx-grpc
+- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-apple-darwin -it multiarch/crossbuild
   ./scripts/build-protobuf.sh
 script:
-- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-linux-gnu -it vertx-grpc
+- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-linux-gnu -it multiarch/crossbuild
   make
-- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=i686-w64-mingw32 -it vertx-grpc
+- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=i686-w64-mingw32 -it multiarch/crossbuild
   make
-- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-w64-mingw32 -it vertx-grpc
+- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-w64-mingw32 -it multiarch/crossbuild
   make
-- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-apple-darwin -it vertx-grpc
+- docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-apple-darwin -it multiarch/crossbuild
   make
 after_success: if [[ "$(mvn org.apache.maven.plugins:maven-help-plugin:evaluate -Dexpression=project.version
   -B | grep -v '\[')" =~ .*SNAPSHOT ]] && [[ "${TRAVIS_BRANCH}" = "master" ]] && [[
