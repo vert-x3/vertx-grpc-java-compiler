@@ -22,7 +22,7 @@ target/$(CROSS_TRIPLE)/protoc-gen-grpc-java.exe: init $(OBJS)
 	$(CXX) -W -o target/$(CROSS_TRIPLE)/protoc-gen-grpc-java.exe $(OBJS) $(LDFLAGS) -Ltarget/$(CROSS_TRIPLE)/protobuf-3.2.0 -lprotoc -lprotobuf $(LDEXTRA)
 
 target/$(CROSS_TRIPLE)/%.o: src/main/cpp/%.cpp
-	$(CXX) -W -Itarget/protobuf-3.2.0/src -x c++ -c -DGRPC_VERSION=1.2.0 --std=c++0x -o $@ $< $(CXXFLAGS) 
+	$(CXX) -W -Itarget/protobuf-3.2.0/src -x c++ -c -DGRPC_VERSION=1.3.0 --std=c++0x -o $@ $< $(CXXFLAGS) 
 
 .PHONY: clean
 
