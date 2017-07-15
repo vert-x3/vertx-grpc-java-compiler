@@ -8,10 +8,10 @@ before_install:
 - mkdir -p target
 cache:
   directories:
-  - target/x86_64-linux-gnu/protobuf-3.2.0
-  - target/i686-w64-mingw32/protobuf-3.2.0
-  - target/x86_64-w64-mingw32/protobuf-3.2.0
-  - target/x86_64-apple-darwin14/protobuf-3.2.0
+  - target/x86_64-linux-gnu/protobuf-3.3.0
+  - target/i686-w64-mingw32/protobuf-3.3.0
+  - target/x86_64-w64-mingw32/protobuf-3.3.0
+  - target/x86_64-apple-darwin14/protobuf-3.3.0
 install:
 - docker run --rm -v $(pwd):/workdir:Z -e CROSS_TRIPLE=x86_64-linux-gnu -it multiarch/crossbuild
   ./scripts/build-protobuf.sh
