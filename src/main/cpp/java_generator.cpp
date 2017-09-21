@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <vector>
 #include <google/protobuf/compiler/java/java_names.h>
@@ -86,7 +87,7 @@ static inline string MessageFullJavaName(bool nano, const Descriptor* desc) {
       // No java package specified.
       return "nano." + name;
     }
-    for (int i = 0; i < name.size(); ++i) {
+    for (size_t i = 0; i < name.size(); ++i) {
       if ((name[i] == '.') && (i < (name.size() - 1)) && isupper(name[i + 1])) {
         return name.substr(0, i + 1) + "nano." + name.substr(i + 1);
       }
@@ -250,7 +251,7 @@ static void GrpcWriteDocCommentBody(Printer* printer,
       printer->Print(" * <pre>\n");
     }
 
-    for (int i = 0; i < lines.size(); i++) {
+    for (size_t i = 0; i < lines.size(); i++) {
       // Most lines should start with a space.  Watch out for lines that start
       // with a /, since putting that right after the leading asterisk will
       // close the comment.
@@ -339,15 +340,15 @@ static void PrintMethodFields(
           "@$ExperimentalApi$(\"https://github.com/grpc/grpc-java/issues/1901\")\n"
           "public static final $MethodDescriptor$<$input_type$,\n"
           "    $output_type$> $method_field_name$ =\n"
-          "    $MethodDescriptor$.create(\n"
-          "        $MethodType$.$method_type$,\n"
-          "        generateFullMethodName(\n"
-          "            \"$Package$$service_name$\", \"$method_name$\"),\n"
-          "        $NanoUtils$.<$input_type$>marshaller(\n"
-          "            new NanoFactory<$input_type$>(ARG_IN_$method_field_name$)),\n"
-          "        $NanoUtils$.<$output_type$>marshaller(\n"
-          "            new NanoFactory<$output_type$>(ARG_OUT_$method_field_name$))\n"
-          "        );\n");
+          "    $MethodDescriptor$.<$input_type$, $output_type$>newBuilder()\n"
+          "        .setType($MethodType$.$method_type$)\n"
+          "        .setFullMethodName(generateFullMethodName(\n"
+          "            \"$Package$$service_name$\", \"$method_name$\"))\n"
+          "        .setRequestMarshaller($NanoUtils$.<$input_type$>marshaller(\n"
+          "            new NanoFactory<$input_type$>(ARG_IN_$method_field_name$)))\n"
+          "        .setResponseMarshaller($NanoUtils$.<$output_type$>marshaller(\n"
+          "            new NanoFactory<$output_type$>(ARG_OUT_$method_field_name$)))\n"
+          "        .build();\n");
     } else {
       if (flavor == ProtoFlavor::LITE) {
         (*vars)["ProtoUtils"] = "io.grpc.protobuf.lite.ProtoLiteUtils";
@@ -359,13 +360,16 @@ static void PrintMethodFields(
           "@$ExperimentalApi$(\"https://github.com/grpc/grpc-java/issues/1901\")\n"
           "public static final $MethodDescriptor$<$input_type$,\n"
           "    $output_type$> $method_field_name$ =\n"
-          "    $MethodDescriptor$.create(\n"
-          "        $MethodType$.$method_type$,\n"
-          "        generateFullMethodName(\n"
-          "            \"$Package$$service_name$\", \"$method_name$\"),\n"
-          "        $ProtoUtils$.marshaller($input_type$.getDefaultInstance()),\n"
-          "        $ProtoUtils$.marshaller($output_type$.getDefaultInstance()));\n");
-    }
+          "    $MethodDescriptor$.<$input_type$, $output_type$>newBuilder()\n"
+          "        .setType($MethodType$.$method_type$)\n"
+          "        .setFullMethodName(generateFullMethodName(\n"
+          "            \"$Package$$service_name$\", \"$method_name$\"))\n"
+          "        .setRequestMarshaller($ProtoUtils$.marshaller(\n"
+          "            $input_type$.getDefaultInstance()))\n"
+          "        .setResponseMarshaller($ProtoUtils$.marshaller(\n"
+          "            $output_type$.getDefaultInstance()))\n"
+          "        .build();\n");
+              }
   }
   p->Print("\n");
 
@@ -904,7 +908,7 @@ static void PrintMethodIDs(const ServiceDescriptor* service,
   }
   stable_sort(sorted_methods.begin(), sorted_methods.end(),
               CompareMethodClientStreaming);
-  for (int i = 0; i < sorted_methods.size(); i++) {
+  for (size_t i = 0; i < sorted_methods.size(); i++) {
     const MethodDescriptor* method = sorted_methods[i];
     (*vars)["method_id"] = to_string(i);
     (*vars)["method_id_name"] = MethodIdFieldName(method);
@@ -1328,8 +1332,8 @@ static void PrintService(const ServiceDescriptor* service,
   p->Print("}\n\n");
 
   // TODO(nmittler): Replace with WriteDocComment once included by protobuf distro.
-  GrpcWriteDocComment(p, " Creates a new ListenableFuture-style stub that supports unary and "
-                         "streaming output calls on the service");
+  GrpcWriteDocComment(p, " Creates a new ListenableFuture-style stub that supports unary calls "
+                         "on the service");
   p->Print(
       *vars,
       "public static $service_name$FutureStub newFutureStub(\n"

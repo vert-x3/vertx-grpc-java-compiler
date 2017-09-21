@@ -1,13 +1,13 @@
 #!/bin/sh
 set -e
-PB_VERSION=3.2.0
+PB_VERSION=3.3.1
 
 # init
 mkdir -p target/${CROSS_TRIPLE}/protobuf-${PB_VERSION}
 cd target
 
 if [ ! -d protobuf-${PB_VERSION} ]; then
-  tar xvf ../protobuf-java-${PB_VERSION}.tar.gz
+  tar xvf ../protobuf-${PB_VERSION}.tar.gz
   cd protobuf-${PB_VERSION}
   ./autogen.sh
   cd ..
