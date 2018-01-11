@@ -341,12 +341,12 @@ static void PrintMethodFields(
       // share the same request or response messages.
       p->Print(
           *vars,
-          "private static final int ARG_IN_$method_method_name$() = $arg_in_id$;\n"
-          "private static final int ARG_OUT_$method_method_name$() = $arg_out_id$;\n"
+          "private static final int ARG_IN_$method_field_name$ = $arg_in_id$;\n"
+          "private static final int ARG_OUT_$method_field_name$ = $arg_out_id$;\n"
           "@$ExperimentalApi$(\"https://github.com/grpc/grpc-java/issues/1901\")\n"
           "@$Deprecated$ // Use {@link #$method_method_name$()} instead. \n"
           "public static final $MethodDescriptor$<$input_type$,\n"
-          "    $output_type$> $method_method_name$() = $method_method_name$();\n"
+          "    $output_type$> $method_field_name$ = $method_method_name$();\n"
           "\n"
           "private static volatile $MethodDescriptor$<$input_type$,\n"
           "    $output_type$> $method_new_field_name$;\n"
@@ -365,9 +365,9 @@ static void PrintMethodFields(
           "                \"$Package$$service_name$\", \"$method_name$\"))\n"
           "            .setSampledToLocalTracing(true)\n"
           "            .setRequestMarshaller($NanoUtils$.<$input_type$>marshaller(\n"
-          "                new NanoFactory<$input_type$>(ARG_IN_$method_method_name$())))\n"
+          "                new NanoFactory<$input_type$>(ARG_IN_$method_field_name$))\n"
           "            .setResponseMarshaller($NanoUtils$.<$output_type$>marshaller(\n"
-          "                new NanoFactory<$output_type$>(ARG_OUT_$method_method_name$())))\n"
+          "                new NanoFactory<$output_type$>(ARG_OUT_$method_field_name$))\n"
           "            .build();\n"
           "      }\n"
           "    }\n"
@@ -385,7 +385,7 @@ static void PrintMethodFields(
           "@$ExperimentalApi$(\"https://github.com/grpc/grpc-java/issues/1901\")\n"
           "@$Deprecated$ // Use {@link #$method_method_name$()} instead. \n"
           "public static final $MethodDescriptor$<$input_type$,\n"
-          "    $output_type$> $method_method_name$() = $method_method_name$();\n"
+          "    $output_type$> $method_field_name$ = $method_method_name$();\n"
           "\n"
           "private static volatile $MethodDescriptor$<$input_type$,\n"
           "    $output_type$> $method_new_field_name$;\n"
@@ -454,10 +454,10 @@ static void PrintMethodFields(
       (*vars)["method_field_name"] = MethodPropertiesFieldName(method);
       p->Print(
           *vars,
-          "    case ARG_IN_$method_method_name$():\n"
+          "    case ARG_IN_$method_field_name$:\n"
           "      o = new $input_type$();\n"
           "      break;\n"
-          "    case ARG_OUT_$method_method_name$():\n"
+          "    case ARG_OUT_$method_field_name$:\n"
           "      o = new $output_type$();\n"
           "      break;\n");
     }
