@@ -1,6 +1,6 @@
 .idea
 i686-w64-mingw32
-protobuf-3.1.0
+protobuf-3.5.1
 *.iml
 x86_64-apple-darwin14
 x86_64-linux-gnu
@@ -9,3 +9,6 @@ target
 .vscode
 out
 versions
+.settings
+.project
+.classpath

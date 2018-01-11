@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
-PB_VERSION=3.3.1
+PB_VERSION=3.5.1
 
 # init
 mkdir -p target/${CROSS_TRIPLE}/protobuf-${PB_VERSION}
