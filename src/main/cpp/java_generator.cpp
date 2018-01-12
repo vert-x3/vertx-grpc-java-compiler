@@ -576,14 +576,14 @@ static void PrintStub(
   if (!impl_base && !interface) {
     p->Print(
         *vars,
-        "private $stub_name$($Channel$ channel) {\n");
+        "public $stub_name$($Channel$ channel) {\n");
     p->Indent();
     p->Print("super(channel);\n");
     p->Outdent();
     p->Print("}\n\n");
     p->Print(
         *vars,
-        "private $stub_name$($Channel$ channel,\n"
+        "public $stub_name$($Channel$ channel,\n"
         "    $CallOptions$ callOptions) {\n");
     p->Indent();
     p->Print("super(channel, callOptions);\n");
