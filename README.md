@@ -30,7 +30,7 @@ Maven will then collect the binaries and archive into the local repository.
 ## Build the plugin
 
 ```
-sudo ./build.sh
+sudo ./scripts/build.sh
 ```
 
 Note that sudo is used here since in Fedora docker requires it, if you don't need it for your case don't use sudo.
