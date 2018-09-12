@@ -8,6 +8,7 @@
 #include <vector>
 #include <google/protobuf/compiler/java/java_names.h>
 #include <google/protobuf/descriptor.h>
+#include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/zero_copy_stream.h>
 
@@ -144,9 +145,13 @@ static inline string MethodIdFieldName(const MethodDescriptor* method) {
   return "METHODID_" + ToAllUpperCase(method->name());
 }
 
+static inline bool ShouldGenerateAsLite(const Descriptor* desc) {
+  return false;
+}
+
 static inline string MessageFullJavaName(bool nano, const Descriptor* desc) {
   string name = google::protobuf::compiler::java::ClassName(desc);
-  if (nano) {
+  if (nano && !ShouldGenerateAsLite(desc)) {
     // XXX: Add "nano" to the original package
     // (https://github.com/grpc/grpc-java/issues/900)
     if (isupper(name[0])) {
@@ -401,10 +406,18 @@ static void PrintMethodFields(
       // TODO(zsurocking): we're creating two NanoFactories for each method right now.
       // We could instead create static NanoFactories and reuse them if some methods
       // share the same request or response messages.
+      if (!ShouldGenerateAsLite(method->input_type())) {
+        p->Print(
+            *vars,
+            "private static final int ARG_IN_$method_field_name$ = $arg_in_id$;\n");
+      }
+      if (!ShouldGenerateAsLite(method->output_type())) {
+        p->Print(
+            *vars,
+            "private static final int ARG_OUT_$method_field_name$ = $arg_out_id$;\n");
+      }
       p->Print(
           *vars,
-          "private static final int ARG_IN_$method_field_name$ = $arg_in_id$;\n"
-          "private static final int ARG_OUT_$method_field_name$ = $arg_out_id$;\n"
           "private static volatile $MethodDescriptor$<$input_type$,\n"
           "    $output_type$> $method_new_field_name$;\n"
           "\n"
@@ -419,11 +432,34 @@ static void PrintMethodFields(
           "            .setType($MethodType$.$method_type$)\n"
           "            .setFullMethodName(generateFullMethodName(\n"
           "                \"$Package$$service_name$\", \"$method_name$\"))\n"
-          "            .setSampledToLocalTracing(true)\n"
-          "            .setRequestMarshaller($NanoUtils$.<$input_type$>marshaller(\n"
-          "                new NanoFactory<$input_type$>(ARG_IN_$method_field_name$))\n"
-          "            .setResponseMarshaller($NanoUtils$.<$output_type$>marshaller(\n"
-          "                new NanoFactory<$output_type$>(ARG_OUT_$method_field_name$))\n"
+          "            .setSampledToLocalTracing(true)\n");
+
+      (*vars)["ProtoLiteUtils"] = "io.grpc.protobuf.lite.ProtoLiteUtils";
+
+      if (ShouldGenerateAsLite(method->input_type())) {
+        p->Print(
+            *vars,
+            "            .setRequestMarshaller($ProtoLiteUtils$.marshaller(\n"
+            "                $input_type$.getDefaultInstance()))\n");
+      } else {
+        p->Print(
+            *vars,
+            "            .setRequestMarshaller($NanoUtils$.<$input_type$>marshaller(\n"
+            "                new NanoFactory<$input_type$>(ARG_IN_$method_field_name$)))\n");
+      }
+      if (ShouldGenerateAsLite(method->output_type())) {
+        p->Print(
+            *vars,
+            "            .setResponseMarshaller($ProtoLiteUtils$.marshaller(\n"
+            "                $output_type$.getDefaultInstance()))\n");
+      } else {
+        p->Print(
+            *vars,
+            "            .setResponseMarshaller($NanoUtils$.<$output_type$>marshaller(\n"
+            "                new NanoFactory<$output_type$>(ARG_OUT_$method_field_name$)))\n");
+      }
+      p->Print(
+          *vars,
           "            .build();\n"
           "      }\n"
           "    }\n"
@@ -503,14 +539,20 @@ static void PrintMethodFields(
       (*vars)["output_type"] = MessageFullJavaName(generate_nano,
                                                    method->output_type());
       (*vars)["method_field_name"] = MethodPropertiesFieldName(method);
-      p->Print(
-          *vars,
-          "    case ARG_IN_$method_field_name$:\n"
-          "      o = new $input_type$();\n"
-          "      break;\n"
-          "    case ARG_OUT_$method_field_name$:\n"
-          "      o = new $output_type$();\n"
-          "      break;\n");
+      if (!ShouldGenerateAsLite(method->input_type())) {
+        p->Print(
+            *vars,
+            "    case ARG_IN_$method_field_name$:\n"
+            "      o = new $input_type$();\n"
+            "      break;\n");
+      }
+      if (!ShouldGenerateAsLite(method->output_type())) {
+        p->Print(
+            *vars,
+            "    case ARG_OUT_$method_field_name$:\n"
+            "      o = new $output_type$();\n"
+            "      break;\n");
+      }
     }
     p->Print(
         "    default:\n"
@@ -612,6 +654,11 @@ static void PrintStub(
   if (!interface) {
     GrpcWriteServiceDocComment(p, service);
   }
+
+  if (service->options().deprecated()) {
+    p->Print(*vars, "@$Deprecated$\n");
+  }
+  
   if (impl_base) {
     p->Print(
         *vars,
@@ -677,10 +724,14 @@ static void PrintStub(
 
     // Method signature
     p->Print("\n");
-    // TODO(nmittler): Replace with WriteMethodDocComment once included by the protobuf distro.
     if (!interface) {
       GrpcWriteMethodDocComment(p, method);
     }
+
+    if (method->options().deprecated()) {
+      p->Print(*vars, "@$Deprecated$\n");
+    }
+
     p->Print("public ");
     switch (call_type) {
       case BLOCKING_CALL:
@@ -1329,7 +1380,13 @@ static void PrintService(const ServiceDescriptor* service,
       *vars,
       "@$Generated$(\n"
       "    value = \"by gRPC proto compiler$grpc_version$\",\n"
-      "    comments = \"Source: $file_name$\")\n"
+      "    comments = \"Source: $file_name$\")\n");
+
+  if (service->options().deprecated()) {
+    p->Print(*vars, "@$Deprecated$\n");
+  }
+  p->Print(
+      *vars,
       "public final class $service_class_name$ {\n\n");
   p->Indent();
   p->Print(
@@ -1505,6 +1562,7 @@ void GenerateService(const ServiceDescriptor* service,
   vars["ProtoMethodDescriptorSupplier"] =
       "io.grpc.protobuf.ProtoMethodDescriptorSupplier";
   vars["AbstractStub"] = "io.grpc.stub.AbstractStub";
+  vars["RpcMethod"] = "io.grpc.stub.annotations.RpcMethod";
   vars["MethodDescriptor"] = "io.grpc.MethodDescriptor";
   vars["NanoUtils"] = "io.grpc.protobuf.nano.NanoUtils";
   vars["StreamObserver"] = "io.grpc.stub.StreamObserver";
