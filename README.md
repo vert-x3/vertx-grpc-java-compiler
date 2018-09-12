@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/vert-x3/vertx-grpc-java-compiler.svg?branch=master)](https://travis-ci.org/vert-x3/vertx-grpc-java-compiler)
 
-# vertx-grpc-java-compiler 1.13.2
+# vertx-grpc-java-compiler 1.15.0
 
 This is a drop-in replacement gRPC compiler for java targeting the Vert.x programming model.
 
@@ -44,7 +44,7 @@ mvn install
 
 The process is quite manual.
 
-1. Run a diff between the gRPC tags, replace the versions in the [link](https://github.com/grpc/grpc-java/compare/v1.13.2...v1.13.x)
+1. Run a diff between the gRPC tags, replace the versions in the [link](https://github.com/grpc/grpc-java/compare/v1.15.0...v1.15.x)
 2. If there are changes in the CPP code try to apply the diff/manual merge
 3. Bump the versions on `pom.xml` and `Makefile` to match the new one.
 4. Build
