@@ -25,90 +25,97 @@
 #define FALLTHROUGH_INTENDED
 #endif
 
-namespace java_grpc_generator {
+namespace java_grpc_generator
+{
 
-using google::protobuf::FileDescriptor;
-using google::protobuf::ServiceDescriptor;
-using google::protobuf::MethodDescriptor;
 using google::protobuf::Descriptor;
-using google::protobuf::io::Printer;
+using google::protobuf::FileDescriptor;
+using google::protobuf::MethodDescriptor;
+using google::protobuf::ServiceDescriptor;
 using google::protobuf::SourceLocation;
+using google::protobuf::io::Printer;
 using std::to_string;
 
 // java keywords from: https://docs.oracle.com/javase/specs/jls/se8/html/jls-3.html#jls-3.9
 static std::set<string> java_keywords = {
-  "abstract",
-  "assert",
-  "boolean",
-  "break",
-  "byte",
-  "case",
-  "catch",
-  "char",
-  "class",
-  "const",
-  "continue",
-  "default",
-  "do",
-  "double",
-  "else",
-  "enum",
-  "extends",
-  "final",
-  "finally",
-  "float",
-  "for",
-  "goto",
-  "if",
-  "implements",
-  "import",
-  "instanceof",
-  "int",
-  "interface",
-  "long",
-  "native",
-  "new",
-  "package",
-  "private",
-  "protected",
-  "public",
-  "return",
-  "short",
-  "static",
-  "strictfp",
-  "super",
-  "switch",
-  "synchronized",
-  "this",
-  "throw",
-  "throws",
-  "transient",
-  "try",
-  "void",
-  "volatile",
-  "while",
-  // additional ones added by us
-  "true",
-  "false",
+    "abstract",
+    "assert",
+    "boolean",
+    "break",
+    "byte",
+    "case",
+    "catch",
+    "char",
+    "class",
+    "const",
+    "continue",
+    "default",
+    "do",
+    "double",
+    "else",
+    "enum",
+    "extends",
+    "final",
+    "finally",
+    "float",
+    "for",
+    "goto",
+    "if",
+    "implements",
+    "import",
+    "instanceof",
+    "int",
+    "interface",
+    "long",
+    "native",
+    "new",
+    "package",
+    "private",
+    "protected",
+    "public",
+    "return",
+    "short",
+    "static",
+    "strictfp",
+    "super",
+    "switch",
+    "synchronized",
+    "this",
+    "throw",
+    "throws",
+    "transient",
+    "try",
+    "void",
+    "volatile",
+    "while",
+    // additional ones added by us
+    "true",
+    "false",
 };
 
 // Adjust a method name prefix identifier to follow the JavaBean spec:
 //   - decapitalize the first letter
 //   - remove embedded underscores & capitalize the following letter
 //  Finally, if the result is a reserved java keyword, append an underscore.
-static string MixedLower(const string& word) {
+static string MixedLower(const string &word)
+{
   string w;
   w += tolower(word[0]);
   bool after_underscore = false;
-  for (size_t i = 1; i < word.length(); ++i) {
-    if (word[i] == '_') {
+  for (size_t i = 1; i < word.length(); ++i)
+  {
+    if (word[i] == '_')
+    {
       after_underscore = true;
-    } else {
+    }
+    else
+    {
       w += after_underscore ? toupper(word[i]) : word[i];
       after_underscore = false;
     }
   }
-  if (java_keywords.find(w) != java_keywords.end()) {
+  if (java_keywords.find(w) != java_keywords.end())
+  {
     return w + "_";
   }
   return w;
@@ -118,48 +125,61 @@ static string MixedLower(const string& word) {
 //   - An underscore is inserted where a lower case letter is followed by an
 //     upper case letter.
 //   - All letters are converted to upper case
-static string ToAllUpperCase(const string& word) {
+static string ToAllUpperCase(const string &word)
+{
   string w;
-  for (size_t i = 0; i < word.length(); ++i) {
+  for (size_t i = 0; i < word.length(); ++i)
+  {
     w += toupper(word[i]);
-    if ((i < word.length() - 1) && islower(word[i]) && isupper(word[i + 1])) {
+    if ((i < word.length() - 1) && islower(word[i]) && isupper(word[i + 1]))
+    {
       w += '_';
     }
   }
   return w;
 }
 
-static inline string LowerMethodName(const MethodDescriptor* method) {
+static inline string LowerMethodName(const MethodDescriptor *method)
+{
   return MixedLower(method->name());
 }
 
-static inline string MethodPropertiesFieldName(const MethodDescriptor* method) {
+static inline string MethodPropertiesFieldName(const MethodDescriptor *method)
+{
   return "METHOD_" + ToAllUpperCase(method->name());
 }
 
-static inline string MethodPropertiesGetterName(const MethodDescriptor* method) {
+static inline string MethodPropertiesGetterName(const MethodDescriptor *method)
+{
   return MixedLower("get_" + method->name() + "_method");
 }
 
-static inline string MethodIdFieldName(const MethodDescriptor* method) {
+static inline string MethodIdFieldName(const MethodDescriptor *method)
+{
   return "METHODID_" + ToAllUpperCase(method->name());
 }
 
-static inline bool ShouldGenerateAsLite(const Descriptor* desc) {
+static inline bool ShouldGenerateAsLite(const Descriptor *desc)
+{
   return false;
 }
 
-static inline string MessageFullJavaName(bool nano, const Descriptor* desc) {
+static inline string MessageFullJavaName(bool nano, const Descriptor *desc)
+{
   string name = google::protobuf::compiler::java::ClassName(desc);
-  if (nano && !ShouldGenerateAsLite(desc)) {
+  if (nano && !ShouldGenerateAsLite(desc))
+  {
     // XXX: Add "nano" to the original package
     // (https://github.com/grpc/grpc-java/issues/900)
-    if (isupper(name[0])) {
+    if (isupper(name[0]))
+    {
       // No java package specified.
       return "nano." + name;
     }
-    for (size_t i = 0; i < name.size(); ++i) {
-      if ((name[i] == '.') && (i < (name.size() - 1)) && isupper(name[i + 1])) {
+    for (size_t i = 0; i < name.size(); ++i)
+    {
+      if ((name[i] == '.') && (i < (name.size() - 1)) && isupper(name[i + 1]))
+      {
         return name.substr(0, i + 1) + "nano." + name.substr(i + 1);
       }
     }
@@ -169,20 +189,27 @@ static inline string MessageFullJavaName(bool nano, const Descriptor* desc) {
 
 // TODO(nmittler): Remove once protobuf includes javadoc methods in distribution.
 template <typename ITR>
-static void GrpcSplitStringToIteratorUsing(const string& full,
-                                       const char* delim,
-                                       ITR& result) {
+static void GrpcSplitStringToIteratorUsing(const string &full,
+                                           const char *delim,
+                                           ITR &result)
+{
   // Optimize the common case where delim is a single character.
-  if (delim[0] != '\0' && delim[1] == '\0') {
+  if (delim[0] != '\0' && delim[1] == '\0')
+  {
     char c = delim[0];
-    const char* p = full.data();
-    const char* end = p + full.size();
-    while (p != end) {
-      if (*p == c) {
+    const char *p = full.data();
+    const char *end = p + full.size();
+    while (p != end)
+    {
+      if (*p == c)
+      {
         ++p;
-      } else {
-        const char* start = p;
-        while (++p != end && *p != c);
+      }
+      else
+      {
+        const char *start = p;
+        while (++p != end && *p != c)
+          ;
         *result++ = string(start, p - start);
       }
     }
@@ -191,9 +218,11 @@ static void GrpcSplitStringToIteratorUsing(const string& full,
 
   string::size_type begin_index, end_index;
   begin_index = full.find_first_not_of(delim);
-  while (begin_index != string::npos) {
+  while (begin_index != string::npos)
+  {
     end_index = full.find_first_of(delim, begin_index);
-    if (end_index == string::npos) {
+    if (end_index == string::npos)
+    {
       *result++ = full.substr(begin_index);
       return;
     }
@@ -203,71 +232,82 @@ static void GrpcSplitStringToIteratorUsing(const string& full,
 }
 
 // TODO(nmittler): Remove once protobuf includes javadoc methods in distribution.
-static void GrpcSplitStringUsing(const string& full,
-                             const char* delim,
-                             std::vector<string>* result) {
-  std::back_insert_iterator< std::vector<string> > it(*result);
+static void GrpcSplitStringUsing(const string &full,
+                                 const char *delim,
+                                 std::vector<string> *result)
+{
+  std::back_insert_iterator<std::vector<string>> it(*result);
   GrpcSplitStringToIteratorUsing(full, delim, it);
 }
 
 // TODO(nmittler): Remove once protobuf includes javadoc methods in distribution.
-static std::vector<string> GrpcSplit(const string& full, const char* delim) {
+static std::vector<string> GrpcSplit(const string &full, const char *delim)
+{
   std::vector<string> result;
   GrpcSplitStringUsing(full, delim, &result);
   return result;
 }
 
 // TODO(nmittler): Remove once protobuf includes javadoc methods in distribution.
-static string GrpcEscapeJavadoc(const string& input) {
+static string GrpcEscapeJavadoc(const string &input)
+{
   string result;
   result.reserve(input.size() * 2);
 
   char prev = '*';
 
-  for (string::size_type i = 0; i < input.size(); i++) {
+  for (string::size_type i = 0; i < input.size(); i++)
+  {
     char c = input[i];
-    switch (c) {
-      case '*':
-        // Avoid "/*".
-        if (prev == '/') {
-          result.append("&#42;");
-        } else {
-          result.push_back(c);
-        }
-        break;
-      case '/':
-        // Avoid "*/".
-        if (prev == '*') {
-          result.append("&#47;");
-        } else {
-          result.push_back(c);
-        }
-        break;
-      case '@':
-        // '@' starts javadoc tags including the @deprecated tag, which will
-        // cause a compile-time error if inserted before a declaration that
-        // does not have a corresponding @Deprecated annotation.
-        result.append("&#64;");
-        break;
-      case '<':
-        // Avoid interpretation as HTML.
-        result.append("&lt;");
-        break;
-      case '>':
-        // Avoid interpretation as HTML.
-        result.append("&gt;");
-        break;
-      case '&':
-        // Avoid interpretation as HTML.
-        result.append("&amp;");
-        break;
-      case '\\':
-        // Java interprets Unicode escape sequences anywhere!
-        result.append("&#92;");
-        break;
-      default:
+    switch (c)
+    {
+    case '*':
+      // Avoid "/*".
+      if (prev == '/')
+      {
+        result.append("&#42;");
+      }
+      else
+      {
         result.push_back(c);
-        break;
+      }
+      break;
+    case '/':
+      // Avoid "*/".
+      if (prev == '*')
+      {
+        result.append("&#47;");
+      }
+      else
+      {
+        result.push_back(c);
+      }
+      break;
+    case '@':
+      // '@' starts javadoc tags including the @deprecated tag, which will
+      // cause a compile-time error if inserted before a declaration that
+      // does not have a corresponding @Deprecated annotation.
+      result.append("&#64;");
+      break;
+    case '<':
+      // Avoid interpretation as HTML.
+      result.append("&lt;");
+      break;
+    case '>':
+      // Avoid interpretation as HTML.
+      result.append("&gt;");
+      break;
+    case '&':
+      // Avoid interpretation as HTML.
+      result.append("&amp;");
+      break;
+    case '\\':
+      // Java interprets Unicode escape sequences anywhere!
+      result.append("&#92;");
+      break;
+    default:
+      result.push_back(c);
+      break;
     }
 
     prev = c;
@@ -278,18 +318,21 @@ static string GrpcEscapeJavadoc(const string& input) {
 
 // TODO(nmittler): Remove once protobuf includes javadoc methods in distribution.
 template <typename DescriptorType>
-static string GrpcGetCommentsForDescriptor(const DescriptorType* descriptor) {
+static string GrpcGetCommentsForDescriptor(const DescriptorType *descriptor)
+{
   SourceLocation location;
-  if (descriptor->GetSourceLocation(&location)) {
-    return location.leading_comments.empty() ?
-      location.trailing_comments : location.leading_comments;
+  if (descriptor->GetSourceLocation(&location))
+  {
+    return location.leading_comments.empty() ? location.trailing_comments : location.leading_comments;
   }
   return string();
 }
 
 // TODO(nmittler): Remove once protobuf includes javadoc methods in distribution.
-static std::vector<string> GrpcGetDocLines(const string& comments) {
-  if (!comments.empty()) {
+static std::vector<string> GrpcGetDocLines(const string &comments)
+{
+  if (!comments.empty())
+  {
     // TODO(kenton):  Ideally we should parse the comment text as Markdown and
     //   write it back as HTML, but this requires a Markdown parser.  For now
     //   we just use <pre> to get fixed-width text formatting.
@@ -299,7 +342,8 @@ static std::vector<string> GrpcGetDocLines(const string& comments) {
     string escapedComments = GrpcEscapeJavadoc(comments);
 
     std::vector<string> lines = GrpcSplit(escapedComments, "\n");
-    while (!lines.empty() && lines.back().empty()) {
+    while (!lines.empty() && lines.back().empty())
+    {
       lines.pop_back();
     }
     return lines;
@@ -309,38 +353,48 @@ static std::vector<string> GrpcGetDocLines(const string& comments) {
 
 // TODO(nmittler): Remove once protobuf includes javadoc methods in distribution.
 template <typename DescriptorType>
-static std::vector<string> GrpcGetDocLinesForDescriptor(const DescriptorType* descriptor) {
+static std::vector<string> GrpcGetDocLinesForDescriptor(const DescriptorType *descriptor)
+{
   return GrpcGetDocLines(GrpcGetCommentsForDescriptor(descriptor));
 }
 
 // TODO(nmittler): Remove once protobuf includes javadoc methods in distribution.
-static void GrpcWriteDocCommentBody(Printer* printer,
-                                    const std::vector<string>& lines,
-                                    bool surroundWithPreTag) {
-  if (!lines.empty()) {
-    if (surroundWithPreTag) {
+static void GrpcWriteDocCommentBody(Printer *printer,
+                                    const std::vector<string> &lines,
+                                    bool surroundWithPreTag)
+{
+  if (!lines.empty())
+  {
+    if (surroundWithPreTag)
+    {
       printer->Print(" * <pre>\n");
     }
 
-    for (size_t i = 0; i < lines.size(); i++) {
+    for (size_t i = 0; i < lines.size(); i++)
+    {
       // Most lines should start with a space.  Watch out for lines that start
       // with a /, since putting that right after the leading asterisk will
       // close the comment.
-      if (!lines[i].empty() && lines[i][0] == '/') {
+      if (!lines[i].empty() && lines[i][0] == '/')
+      {
         printer->Print(" * $line$\n", "line", lines[i]);
-      } else {
+      }
+      else
+      {
         printer->Print(" *$line$\n", "line", lines[i]);
       }
     }
 
-    if (surroundWithPreTag) {
+    if (surroundWithPreTag)
+    {
       printer->Print(" * </pre>\n");
     }
   }
 }
 
 // TODO(nmittler): Remove once protobuf includes javadoc methods in distribution.
-static void GrpcWriteDocComment(Printer* printer, const string& comments) {
+static void GrpcWriteDocComment(Printer *printer, const string &comments)
+{
   printer->Print("/**\n");
   std::vector<string> lines = GrpcGetDocLines(comments);
   GrpcWriteDocCommentBody(printer, lines, false);
@@ -348,8 +402,9 @@ static void GrpcWriteDocComment(Printer* printer, const string& comments) {
 }
 
 // TODO(nmittler): Remove once protobuf includes javadoc methods in distribution.
-static void GrpcWriteServiceDocComment(Printer* printer,
-                                       const ServiceDescriptor* service) {
+static void GrpcWriteServiceDocComment(Printer *printer,
+                                       const ServiceDescriptor *service)
+{
   // Deviating from protobuf to avoid extraneous docs
   // (see https://github.com/google/protobuf/issues/1406);
   printer->Print("/**\n");
@@ -359,8 +414,9 @@ static void GrpcWriteServiceDocComment(Printer* printer,
 }
 
 // TODO(nmittler): Remove once protobuf includes javadoc methods in distribution.
-void GrpcWriteMethodDocComment(Printer* printer,
-                           const MethodDescriptor* method) {
+void GrpcWriteMethodDocComment(Printer *printer,
+                               const MethodDescriptor *method)
+{
   // Deviating from protobuf to avoid extraneous docs
   // (see https://github.com/google/protobuf/issues/1406);
   printer->Print("/**\n");
@@ -370,12 +426,14 @@ void GrpcWriteMethodDocComment(Printer* printer,
 }
 
 static void PrintMethodFields(
-    const ServiceDescriptor* service, std::map<string, string>* vars,
-    Printer* p, ProtoFlavor flavor) {
+    const ServiceDescriptor *service, std::map<string, string> *vars,
+    Printer *p, ProtoFlavor flavor)
+{
   p->Print("// Static method descriptors that strictly reflect the proto.\n");
   (*vars)["service_name"] = service->name();
-  for (int i = 0; i < service->method_count(); ++i) {
-    const MethodDescriptor* method = service->method(i);
+  for (int i = 0; i < service->method_count(); ++i)
+  {
+    const MethodDescriptor *method = service->method(i);
     (*vars)["arg_in_id"] = to_string(2 * i);
     (*vars)["arg_out_id"] = to_string(2 * i + 1);
     (*vars)["method_name"] = method->name();
@@ -388,30 +446,42 @@ static void PrintMethodFields(
     (*vars)["method_method_name"] = MethodPropertiesGetterName(method);
     bool client_streaming = method->client_streaming();
     bool server_streaming = method->server_streaming();
-    if (client_streaming) {
-      if (server_streaming) {
+    if (client_streaming)
+    {
+      if (server_streaming)
+      {
         (*vars)["method_type"] = "BIDI_STREAMING";
-      } else {
+      }
+      else
+      {
         (*vars)["method_type"] = "CLIENT_STREAMING";
       }
-    } else {
-      if (server_streaming) {
+    }
+    else
+    {
+      if (server_streaming)
+      {
         (*vars)["method_type"] = "SERVER_STREAMING";
-      } else {
+      }
+      else
+      {
         (*vars)["method_type"] = "UNARY";
       }
     }
 
-    if (flavor == ProtoFlavor::NANO) {
+    if (flavor == ProtoFlavor::NANO)
+    {
       // TODO(zsurocking): we're creating two NanoFactories for each method right now.
       // We could instead create static NanoFactories and reuse them if some methods
       // share the same request or response messages.
-      if (!ShouldGenerateAsLite(method->input_type())) {
+      if (!ShouldGenerateAsLite(method->input_type()))
+      {
         p->Print(
             *vars,
             "private static final int ARG_IN_$method_field_name$ = $arg_in_id$;\n");
       }
-      if (!ShouldGenerateAsLite(method->output_type())) {
+      if (!ShouldGenerateAsLite(method->output_type()))
+      {
         p->Print(
             *vars,
             "private static final int ARG_OUT_$method_field_name$ = $arg_out_id$;\n");
@@ -436,23 +506,29 @@ static void PrintMethodFields(
 
       (*vars)["ProtoLiteUtils"] = "io.grpc.protobuf.lite.ProtoLiteUtils";
 
-      if (ShouldGenerateAsLite(method->input_type())) {
+      if (ShouldGenerateAsLite(method->input_type()))
+      {
         p->Print(
             *vars,
             "            .setRequestMarshaller($ProtoLiteUtils$.marshaller(\n"
             "                $input_type$.getDefaultInstance()))\n");
-      } else {
+      }
+      else
+      {
         p->Print(
             *vars,
             "            .setRequestMarshaller($NanoUtils$.<$input_type$>marshaller(\n"
             "                new NanoFactory<$input_type$>(ARG_IN_$method_field_name$)))\n");
       }
-      if (ShouldGenerateAsLite(method->output_type())) {
+      if (ShouldGenerateAsLite(method->output_type()))
+      {
         p->Print(
             *vars,
             "            .setResponseMarshaller($ProtoLiteUtils$.marshaller(\n"
             "                $output_type$.getDefaultInstance()))\n");
-      } else {
+      }
+      else
+      {
         p->Print(
             *vars,
             "            .setResponseMarshaller($NanoUtils$.<$output_type$>marshaller(\n"
@@ -467,10 +543,15 @@ static void PrintMethodFields(
           "  return $method_new_field_name$;\n"
           "}\n"
           "\n");
-    } else {
-      if (flavor == ProtoFlavor::LITE) {
+    }
+    else
+    {
+      if (flavor == ProtoFlavor::LITE)
+      {
         (*vars)["ProtoUtils"] = "io.grpc.protobuf.lite.ProtoLiteUtils";
-      } else {
+      }
+      else
+      {
         (*vars)["ProtoUtils"] = "io.grpc.protobuf.ProtoUtils";
       }
       p->Print(
@@ -496,27 +577,28 @@ static void PrintMethodFields(
           "                $output_type$.getDefaultInstance()))\n");
 
       (*vars)["proto_method_descriptor_supplier"] = service->name() + "MethodDescriptorSupplier";
-      if (flavor == ProtoFlavor::NORMAL) {
+      if (flavor == ProtoFlavor::NORMAL)
+      {
         p->Print(
             *vars,
-          "                .setSchemaDescriptor(new $proto_method_descriptor_supplier$(\"$method_name$\"))\n");
+            "                .setSchemaDescriptor(new $proto_method_descriptor_supplier$(\"$method_name$\"))\n");
       }
 
       p->Print(
           *vars,
           "                .build();\n");
       p->Print(*vars,
-          "        }\n"
-          "      }\n"
-          "   }\n"
-          "   return $method_new_field_name$;\n"
-          "}\n"
-          "\n");
-
+               "        }\n"
+               "      }\n"
+               "   }\n"
+               "   return $method_new_field_name$;\n"
+               "}\n"
+               "\n");
     }
   }
 
-  if (flavor == ProtoFlavor::NANO) {
+  if (flavor == ProtoFlavor::NANO)
+  {
     p->Print(
         *vars,
         "private static final class NanoFactory<T extends com.google.protobuf.nano.MessageNano>\n"
@@ -532,21 +614,24 @@ static void PrintMethodFields(
         "    Object o;\n"
         "    switch (id) {\n");
     bool generate_nano = true;
-    for (int i = 0; i < service->method_count(); ++i) {
-      const MethodDescriptor* method = service->method(i);
+    for (int i = 0; i < service->method_count(); ++i)
+    {
+      const MethodDescriptor *method = service->method(i);
       (*vars)["input_type"] = MessageFullJavaName(generate_nano,
                                                   method->input_type());
       (*vars)["output_type"] = MessageFullJavaName(generate_nano,
                                                    method->output_type());
       (*vars)["method_field_name"] = MethodPropertiesFieldName(method);
-      if (!ShouldGenerateAsLite(method->input_type())) {
+      if (!ShouldGenerateAsLite(method->input_type()))
+      {
         p->Print(
             *vars,
             "    case ARG_IN_$method_field_name$:\n"
             "      o = new $input_type$();\n"
             "      break;\n");
       }
-      if (!ShouldGenerateAsLite(method->output_type())) {
+      if (!ShouldGenerateAsLite(method->output_type()))
+      {
         p->Print(
             *vars,
             "    case ARG_OUT_$method_field_name$:\n"
@@ -567,7 +652,8 @@ static void PrintMethodFields(
   }
 }
 
-enum StubType {
+enum StubType
+{
   ASYNC_INTERFACE = 0,
   BLOCKING_CLIENT_INTERFACE = 1,
   FUTURE_CLIENT_INTERFACE = 2,
@@ -580,24 +666,26 @@ enum StubType {
   VERTX_CLIENT_IMPL = 101,
 };
 
-enum CallType {
+enum CallType
+{
   ASYNC_CALL = 0,
   BLOCKING_CALL = 1,
   FUTURE_CALL = 2,
   VERTX_CALL = 100,
 };
 
-static void PrintBindServiceMethodBody(const ServiceDescriptor* service,
-                                   std::map<string, string>* vars,
-                                   Printer* p,
-                                   CallType call_type,
-                                   bool generate_nano);
+static void PrintBindServiceMethodBody(const ServiceDescriptor *service,
+                                       std::map<string, string> *vars,
+                                       Printer *p,
+                                       CallType call_type,
+                                       bool generate_nano);
 
 // Prints a client interface or implementation class, or a server interface.
 static void PrintStub(
-    const ServiceDescriptor* service,
-    std::map<string, string>* vars,
-    Printer* p, StubType type, bool generate_nano) {
+    const ServiceDescriptor *service,
+    std::map<string, string> *vars,
+    Printer *p, StubType type, bool generate_nano)
+{
   const string service_name = service->name();
   (*vars)["service_name"] = service_name;
   string stub_name = service_name;
@@ -605,65 +693,71 @@ static void PrintStub(
   CallType call_type;
   bool impl_base = false;
   bool interface = false;
-  switch (type) {
-    case ABSTRACT_CLASS:
-      call_type = ASYNC_CALL;
-      (*vars)["abstract_name"] = service_name + "ImplBase";
-      impl_base = true;
-      break;
-    case ASYNC_CLIENT_IMPL:
-      call_type = ASYNC_CALL;
-      stub_name += "Stub";
-      break;
-    case BLOCKING_CLIENT_INTERFACE:
-      interface = true;
-      FALLTHROUGH_INTENDED;
-    case BLOCKING_CLIENT_IMPL:
-      call_type = BLOCKING_CALL;
-      stub_name += "BlockingStub";
-      client_name += "BlockingClient";
-      break;
-    case FUTURE_CLIENT_INTERFACE:
-      interface = true;
-      FALLTHROUGH_INTENDED;
-    case FUTURE_CLIENT_IMPL:
-      call_type = FUTURE_CALL;
-      stub_name += "FutureStub";
-      client_name += "FutureClient";
-      break;
-    case ASYNC_INTERFACE:
-      call_type = ASYNC_CALL;
-      interface = true;
-      break;
-    case VERTX_CLIENT_IMPL:
-      call_type = VERTX_CALL;
-      stub_name += "VertxStub";
-      break;
-    case VERTX_SERVER_IMPL:
-      call_type = VERTX_CALL;
-      (*vars)["abstract_name"] = service_name + "VertxImplBase";
-      impl_base = true;
-      break;
-    default:
-      GRPC_CODEGEN_FAIL << "Cannot determine class name for StubType: " << type;
+  switch (type)
+  {
+  case ABSTRACT_CLASS:
+    call_type = ASYNC_CALL;
+    (*vars)["abstract_name"] = service_name + "ImplBase";
+    impl_base = true;
+    break;
+  case ASYNC_CLIENT_IMPL:
+    call_type = ASYNC_CALL;
+    stub_name += "Stub";
+    break;
+  case BLOCKING_CLIENT_INTERFACE:
+    interface = true;
+    FALLTHROUGH_INTENDED;
+  case BLOCKING_CLIENT_IMPL:
+    call_type = BLOCKING_CALL;
+    stub_name += "BlockingStub";
+    client_name += "BlockingClient";
+    break;
+  case FUTURE_CLIENT_INTERFACE:
+    interface = true;
+    FALLTHROUGH_INTENDED;
+  case FUTURE_CLIENT_IMPL:
+    call_type = FUTURE_CALL;
+    stub_name += "FutureStub";
+    client_name += "FutureClient";
+    break;
+  case ASYNC_INTERFACE:
+    call_type = ASYNC_CALL;
+    interface = true;
+    break;
+  case VERTX_CLIENT_IMPL:
+    call_type = VERTX_CALL;
+    stub_name += "VertxStub";
+    break;
+  case VERTX_SERVER_IMPL:
+    call_type = VERTX_CALL;
+    (*vars)["abstract_name"] = service_name + "VertxImplBase";
+    impl_base = true;
+    break;
+  default:
+    GRPC_CODEGEN_FAIL << "Cannot determine class name for StubType: " << type;
   }
   (*vars)["stub_name"] = stub_name;
   (*vars)["client_name"] = client_name;
 
   // Class head
-  if (!interface) {
+  if (!interface)
+  {
     GrpcWriteServiceDocComment(p, service);
   }
 
-  if (service->options().deprecated()) {
+  if (service->options().deprecated())
+  {
     p->Print(*vars, "@$Deprecated$\n");
   }
-  
-  if (impl_base) {
+
+  if (impl_base)
+  {
     p->Print(
         *vars,
         "public static abstract class $abstract_name$ implements $BindableService$ {\n");
-  } else {
+  }
+  else
+  {
     p->Print(
         *vars,
         "public static final class $stub_name$ extends $AbstractStub$<$stub_name$> {\n");
@@ -671,7 +765,8 @@ static void PrintStub(
   p->Indent();
 
   // Constructor and build() method
-  if (!impl_base && !interface) {
+  if (!impl_base && !interface)
+  {
     p->Print(
         *vars,
         "public $stub_name$($Channel$ channel) {\n");
@@ -701,8 +796,9 @@ static void PrintStub(
   }
 
   // RPC methods
-  for (int i = 0; i < service->method_count(); ++i) {
-    const MethodDescriptor* method = service->method(i);
+  for (int i = 0; i < service->method_count(); ++i)
+  {
+    const MethodDescriptor *method = service->method(i);
     (*vars)["input_type"] = MessageFullJavaName(generate_nano,
                                                 method->input_type());
     (*vars)["output_type"] = MessageFullJavaName(generate_nano,
@@ -712,272 +808,344 @@ static void PrintStub(
     bool client_streaming = method->client_streaming();
     bool server_streaming = method->server_streaming();
 
-    if (call_type == BLOCKING_CALL && client_streaming) {
+    if (call_type == BLOCKING_CALL && client_streaming)
+    {
       // Blocking client interface with client streaming is not available
       continue;
     }
 
-    if (call_type == FUTURE_CALL && (client_streaming || server_streaming)) {
+    if (call_type == FUTURE_CALL && (client_streaming || server_streaming))
+    {
       // Future interface doesn't support streaming.
       continue;
     }
 
     // Method signature
     p->Print("\n");
-    if (!interface) {
+    if (!interface)
+    {
       GrpcWriteMethodDocComment(p, method);
     }
 
-    if (method->options().deprecated()) {
+    if (method->options().deprecated())
+    {
       p->Print(*vars, "@$Deprecated$\n");
     }
 
     p->Print("public ");
-    switch (call_type) {
-      case BLOCKING_CALL:
-        GRPC_CODEGEN_CHECK(!client_streaming)
-            << "Blocking client interface with client streaming is unavailable";
-        if (server_streaming) {
-          // Server streaming
-          p->Print(
-              *vars,
-              "$Iterator$<$output_type$> $lower_method_name$(\n"
-              "    $input_type$ request)");
-        } else {
-          // Simple RPC
-          p->Print(
-              *vars,
-              "$output_type$ $lower_method_name$($input_type$ request)");
-        }
-        break;
-      case ASYNC_CALL:
-        if (client_streaming) {
-          // Bidirectional streaming or client streaming
-          p->Print(
-              *vars,
-              "$StreamObserver$<$input_type$> $lower_method_name$(\n"
-              "    $StreamObserver$<$output_type$> responseObserver)");
-        } else {
-          // Server streaming or simple RPC
-          p->Print(
-              *vars,
-              "void $lower_method_name$($input_type$ request,\n"
-              "    $StreamObserver$<$output_type$> responseObserver)");
-        }
-        break;
-      case FUTURE_CALL:
-        GRPC_CODEGEN_CHECK(!client_streaming && !server_streaming)
-            << "Future interface doesn't support streaming. "
-            << "client_streaming=" << client_streaming << ", "
-            << "server_streaming=" << server_streaming;
+    switch (call_type)
+    {
+    case BLOCKING_CALL:
+      GRPC_CODEGEN_CHECK(!client_streaming)
+          << "Blocking client interface with client streaming is unavailable";
+      if (server_streaming)
+      {
+        // Server streaming
         p->Print(
             *vars,
-            "$ListenableFuture$<$output_type$> $lower_method_name$(\n"
+            "$Iterator$<$output_type$> $lower_method_name$(\n"
             "    $input_type$ request)");
-        break;
-      case VERTX_CALL:
-        if (impl_base || interface) {
-          if (client_streaming) {
-            if (server_streaming) {
-              p->Print(
-                  *vars,
-                  "void $lower_method_name$(\n"
-                  "    io.vertx.grpc.GrpcBidiExchange<$input_type$, $output_type$> exchange)");
-            } else {
-              p->Print(
-                  *vars,
-                  "void $lower_method_name$(io.vertx.grpc.GrpcReadStream<$input_type$> request,\n"
-                  "    io.vertx.core.Future<$output_type$> response)");
-            }
-          } else {
-            if (server_streaming) {
-              p->Print(
-                  *vars,
-                  "void $lower_method_name$($input_type$ request,\n"
-                  "    io.vertx.grpc.GrpcWriteStream<$output_type$> response)");
-            } else {
-              p->Print(
-                  *vars,
-                  "void $lower_method_name$($input_type$ request,\n"
-                  "    io.vertx.core.Future<$output_type$> response)");
-            }
+      }
+      else
+      {
+        // Simple RPC
+        p->Print(
+            *vars,
+            "$output_type$ $lower_method_name$($input_type$ request)");
+      }
+      break;
+    case ASYNC_CALL:
+      if (client_streaming)
+      {
+        // Bidirectional streaming or client streaming
+        p->Print(
+            *vars,
+            "$StreamObserver$<$input_type$> $lower_method_name$(\n"
+            "    $StreamObserver$<$output_type$> responseObserver)");
+      }
+      else
+      {
+        // Server streaming or simple RPC
+        p->Print(
+            *vars,
+            "void $lower_method_name$($input_type$ request,\n"
+            "    $StreamObserver$<$output_type$> responseObserver)");
+      }
+      break;
+    case FUTURE_CALL:
+      GRPC_CODEGEN_CHECK(!client_streaming && !server_streaming)
+          << "Future interface doesn't support streaming. "
+          << "client_streaming=" << client_streaming << ", "
+          << "server_streaming=" << server_streaming;
+      p->Print(
+          *vars,
+          "$ListenableFuture$<$output_type$> $lower_method_name$(\n"
+          "    $input_type$ request)");
+      break;
+    case VERTX_CALL:
+      if (impl_base || interface)
+      {
+        if (client_streaming)
+        {
+          if (server_streaming)
+          {
+            p->Print(
+                *vars,
+                "void $lower_method_name$(\n"
+                "    io.vertx.grpc.GrpcBidiExchange<$input_type$, $output_type$> exchange)");
           }
-        } else {
-          if (client_streaming) {
-            if (server_streaming) {
-              p->Print(
-                  *vars,
-                  "void $lower_method_name$(io.vertx.core.Handler<\n"
-                  "    io.vertx.grpc.GrpcBidiExchange<$output_type$, $input_type$>> handler)");
-            } else {
-              p->Print(
-                  *vars,
-                  "void $lower_method_name$(io.vertx.core.Handler<\n"
-                  "    io.vertx.grpc.GrpcUniExchange<$input_type$, $output_type$>> handler)");
-            }
-          } else {
-            if (server_streaming) {
-              p->Print(
-                  *vars,
-                  "void $lower_method_name$($input_type$ request,\n"
-                  "    io.vertx.core.Handler<io.vertx.grpc.GrpcReadStream<$output_type$>> handler)");
-            } else {
-              p->Print(
-                  *vars,
-                  "void $lower_method_name$($input_type$ request,\n"
-                  "    io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>> response)");
-            }
+          else
+          {
+            p->Print(
+                *vars,
+                "void $lower_method_name$(io.vertx.grpc.GrpcReadStream<$input_type$> request,\n"
+                "    io.vertx.core.Future<$output_type$> response)");
           }
         }
-        break;
+        else
+        {
+          if (server_streaming)
+          {
+            p->Print(
+                *vars,
+                "void $lower_method_name$($input_type$ request,\n"
+                "    io.vertx.grpc.GrpcWriteStream<$output_type$> response)");
+          }
+          else
+          {
+            p->Print(
+                *vars,
+                "void $lower_method_name$($input_type$ request,\n"
+                "    io.vertx.core.Promise<$output_type$> response)");
+          }
+        }
+      }
+      else
+      {
+        if (client_streaming)
+        {
+          if (server_streaming)
+          {
+            p->Print(
+                *vars,
+                "void $lower_method_name$(io.vertx.core.Handler<\n"
+                "    io.vertx.grpc.GrpcBidiExchange<$output_type$, $input_type$>> handler)");
+          }
+          else
+          {
+            p->Print(
+                *vars,
+                "void $lower_method_name$(io.vertx.core.Handler<\n"
+                "    io.vertx.grpc.GrpcUniExchange<$input_type$, $output_type$>> handler)");
+          }
+        }
+        else
+        {
+          if (server_streaming)
+          {
+            p->Print(
+                *vars,
+                "void $lower_method_name$($input_type$ request,\n"
+                "    io.vertx.core.Handler<io.vertx.grpc.GrpcReadStream<$output_type$>> handler)");
+          }
+          else
+          {
+            p->Print(
+                *vars,
+                "void $lower_method_name$($input_type$ request,\n"
+                "    io.vertx.core.Handler<io.vertx.core.AsyncResult<$output_type$>> response)");
+          }
+        }
+      }
+      break;
     }
 
-    if (interface) {
+    if (interface)
+    {
       p->Print(";\n");
       continue;
     }
     // Method body.
     p->Print(" {\n");
     p->Indent();
-    if (impl_base) {
-      switch (call_type) {
-        // NB: Skipping validation of service methods. If something is wrong, we wouldn't get to
-        // this point as compiler would return errors when generating service interface.
-        case ASYNC_CALL:
-          if (client_streaming) {
+    if (impl_base)
+    {
+      switch (call_type)
+      {
+      // NB: Skipping validation of service methods. If something is wrong, we wouldn't get to
+      // this point as compiler would return errors when generating service interface.
+      case ASYNC_CALL:
+        if (client_streaming)
+        {
+          p->Print(
+              *vars,
+              "return asyncUnimplementedStreamingCall($method_method_name$(), responseObserver);\n");
+        }
+        else
+        {
+          p->Print(
+              *vars,
+              "asyncUnimplementedUnaryCall($method_method_name$(), responseObserver);\n");
+        }
+        break;
+      case VERTX_CALL:
+        if (client_streaming)
+        {
+          if (server_streaming)
+          {
             p->Print(
                 *vars,
-                "return asyncUnimplementedStreamingCall($method_method_name$(), responseObserver);\n");
-          } else {
+                "exchange.setReadObserver(asyncUnimplementedStreamingCall($method_method_name$(), exchange.writeObserver()));\n");
+          }
+          else
+          {
             p->Print(
                 *vars,
-                "asyncUnimplementedUnaryCall($method_method_name$(), responseObserver);\n");
+                "request.setReadObserver(asyncUnimplementedStreamingCall($method_method_name$(), $service_class_name$.toObserver(response)));\n");
           }
-          break;
-        case VERTX_CALL:
-          if (client_streaming) {
-            if (server_streaming) {
-              p->Print(
-                  *vars,
-                  "exchange.setReadObserver(asyncUnimplementedStreamingCall($method_method_name$(), exchange.writeObserver()));\n");
-            } else {
-              p->Print(
-                  *vars,
-                  "request.setReadObserver(asyncUnimplementedStreamingCall($method_method_name$(), $service_class_name$.toObserver(response.completer())));\n");
-            }
-          } else {
-            if (server_streaming) {
-              p->Print(
-                  *vars,
-                  "asyncUnimplementedUnaryCall($method_method_name$(), response.writeObserver());\n");
-            } else {
-              p->Print(
-                  *vars,
-                  "asyncUnimplementedUnaryCall($method_method_name$(), $service_class_name$.toObserver(response.completer()));\n");
-            }
+        }
+        else
+        {
+          if (server_streaming)
+          {
+            p->Print(
+                *vars,
+                "asyncUnimplementedUnaryCall($method_method_name$(), response.writeObserver());\n");
           }
-          break;
-        default:
-          break;
+          else
+          {
+            p->Print(
+                *vars,
+                "asyncUnimplementedUnaryCall($method_method_name$(), $service_class_name$.toObserver(response));\n");
+          }
+        }
+        break;
+      default:
+        break;
       }
-    } else if (!interface) {
-      switch (call_type) {
-        case BLOCKING_CALL:
-          GRPC_CODEGEN_CHECK(!client_streaming)
-              << "Blocking client streaming interface is not available";
-          if (server_streaming) {
-            (*vars)["calls_method"] = "blockingServerStreamingCall";
-            (*vars)["params"] = "request";
-          } else {
-            (*vars)["calls_method"] = "blockingUnaryCall";
-            (*vars)["params"] = "request";
+    }
+    else if (!interface)
+    {
+      switch (call_type)
+      {
+      case BLOCKING_CALL:
+        GRPC_CODEGEN_CHECK(!client_streaming)
+            << "Blocking client streaming interface is not available";
+        if (server_streaming)
+        {
+          (*vars)["calls_method"] = "blockingServerStreamingCall";
+          (*vars)["params"] = "request";
+        }
+        else
+        {
+          (*vars)["calls_method"] = "blockingUnaryCall";
+          (*vars)["params"] = "request";
+        }
+        p->Print(
+            *vars,
+            "return $calls_method$(\n"
+            "    getChannel(), $method_method_name$(), getCallOptions(), $params$);\n");
+        break;
+      case ASYNC_CALL:
+        if (server_streaming)
+        {
+          if (client_streaming)
+          {
+            (*vars)["calls_method"] = "asyncBidiStreamingCall";
+            (*vars)["params"] = "responseObserver";
           }
-          p->Print(
-              *vars,
-              "return $calls_method$(\n"
-              "    getChannel(), $method_method_name$(), getCallOptions(), $params$);\n");
-          break;
-        case ASYNC_CALL:
-          if (server_streaming) {
-            if (client_streaming) {
-              (*vars)["calls_method"] = "asyncBidiStreamingCall";
-              (*vars)["params"] = "responseObserver";
-            } else {
-              (*vars)["calls_method"] = "asyncServerStreamingCall";
-              (*vars)["params"] = "request, responseObserver";
-            }
-          } else {
-            if (client_streaming) {
-              (*vars)["calls_method"] = "asyncClientStreamingCall";
-              (*vars)["params"] = "responseObserver";
-            } else {
-              (*vars)["calls_method"] = "asyncUnaryCall";
-              (*vars)["params"] = "request, responseObserver";
-            }
+          else
+          {
+            (*vars)["calls_method"] = "asyncServerStreamingCall";
+            (*vars)["params"] = "request, responseObserver";
           }
-          (*vars)["last_line_prefix"] = client_streaming ? "return " : "";
-          p->Print(
-              *vars,
-              "$last_line_prefix$$calls_method$(\n"
-              "    getChannel().newCall($method_method_name$(), getCallOptions()), $params$);\n");
-          break;
-        case FUTURE_CALL:
-          GRPC_CODEGEN_CHECK(!client_streaming && !server_streaming)
-              << "Future interface doesn't support streaming. "
-              << "client_streaming=" << client_streaming << ", "
-              << "server_streaming=" << server_streaming;
-          (*vars)["calls_method"] = "futureUnaryCall";
-          p->Print(
-              *vars,
-              "return $calls_method$(\n"
-              "    getChannel().newCall($method_method_name$(), getCallOptions()), request);\n");
-          break;
-        case VERTX_CALL:
-          if (client_streaming) {
-            if (server_streaming) {
-              (*vars)["calls_method"] = "asyncBidiStreamingCall";
-              p->Print(
+        }
+        else
+        {
+          if (client_streaming)
+          {
+            (*vars)["calls_method"] = "asyncClientStreamingCall";
+            (*vars)["params"] = "responseObserver";
+          }
+          else
+          {
+            (*vars)["calls_method"] = "asyncUnaryCall";
+            (*vars)["params"] = "request, responseObserver";
+          }
+        }
+        (*vars)["last_line_prefix"] = client_streaming ? "return " : "";
+        p->Print(
+            *vars,
+            "$last_line_prefix$$calls_method$(\n"
+            "    getChannel().newCall($method_method_name$(), getCallOptions()), $params$);\n");
+        break;
+      case FUTURE_CALL:
+        GRPC_CODEGEN_CHECK(!client_streaming && !server_streaming)
+            << "Future interface doesn't support streaming. "
+            << "client_streaming=" << client_streaming << ", "
+            << "server_streaming=" << server_streaming;
+        (*vars)["calls_method"] = "futureUnaryCall";
+        p->Print(
+            *vars,
+            "return $calls_method$(\n"
+            "    getChannel().newCall($method_method_name$(), getCallOptions()), request);\n");
+        break;
+      case VERTX_CALL:
+        if (client_streaming)
+        {
+          if (server_streaming)
+          {
+            (*vars)["calls_method"] = "asyncBidiStreamingCall";
+            p->Print(
                 *vars,
                 "final io.vertx.grpc.GrpcReadStream<$output_type$> readStream =\n"
                 "    io.vertx.grpc.GrpcReadStream.<$output_type$>create();\n\n"
                 "handler.handle(io.vertx.grpc.GrpcBidiExchange.create(readStream, $calls_method$(\n"
                 "    getChannel().newCall($method_method_name$(), getCallOptions()), readStream.readObserver())));\n");
-            } else {
-              (*vars)["calls_method"] = "asyncClientStreamingCall";
-              p->Print(
+          }
+          else
+          {
+            (*vars)["calls_method"] = "asyncClientStreamingCall";
+            p->Print(
                 *vars,
                 "final io.vertx.grpc.GrpcReadStream<$output_type$> readStream =\n"
                 "    io.vertx.grpc.GrpcReadStream.<$output_type$>create();\n\n"
                 "handler.handle(io.vertx.grpc.GrpcUniExchange.create(readStream, $calls_method$(\n"
                 "    getChannel().newCall($method_method_name$(), getCallOptions()), readStream.readObserver())));\n");
-            }
-          } else {
-            if (server_streaming) {
-              (*vars)["calls_method"] = "asyncServerStreamingCall";
-              p->Print(
-                  *vars,
-                  "final io.vertx.grpc.GrpcReadStream<$output_type$> readStream =\n"
-                  "    io.vertx.grpc.GrpcReadStream.<$output_type$>create();\n"
-                  "\n"
-                  "handler.handle(readStream);\n"
-                  "$calls_method$(\n"
-                  "    getChannel().newCall($method_method_name$(), getCallOptions()), request, readStream.readObserver());\n");
-            } else {
-              (*vars)["calls_method"] = "asyncUnaryCall";
-              p->Print(
-                  *vars,
-                  "$calls_method$(\n"
-                  "    getChannel().newCall($method_method_name$(), getCallOptions()), request, $service_class_name$.toObserver(response));\n");
-            }
           }
-          break;
+        }
+        else
+        {
+          if (server_streaming)
+          {
+            (*vars)["calls_method"] = "asyncServerStreamingCall";
+            p->Print(
+                *vars,
+                "final io.vertx.grpc.GrpcReadStream<$output_type$> readStream =\n"
+                "    io.vertx.grpc.GrpcReadStream.<$output_type$>create();\n"
+                "\n"
+                "handler.handle(readStream);\n"
+                "$calls_method$(\n"
+                "    getChannel().newCall($method_method_name$(), getCallOptions()), request, readStream.readObserver());\n");
+          }
+          else
+          {
+            (*vars)["calls_method"] = "asyncUnaryCall";
+            p->Print(
+                *vars,
+                "$calls_method$(\n"
+                "    getChannel().newCall($method_method_name$(), getCallOptions()), request, $service_class_name$.toObserver(response));\n");
+          }
+        }
+        break;
       }
     }
     p->Outdent();
     p->Print("}\n");
   }
 
-  if (impl_base) {
+  if (impl_base)
+  {
     p->Print("\n");
     p->Print(
         *vars,
@@ -991,25 +1159,27 @@ static void PrintStub(
   p->Print("}\n\n");
 }
 
-static bool CompareMethodClientStreaming(const MethodDescriptor* method1,
-                                         const MethodDescriptor* method2)
+static bool CompareMethodClientStreaming(const MethodDescriptor *method1,
+                                         const MethodDescriptor *method2)
 {
   return method1->client_streaming() < method2->client_streaming();
 }
 
 // Print all method IDs.
-static void PrintMethodIDs(const ServiceDescriptor* service,
-                           map<string, string>* vars, Printer* p)
+static void PrintMethodIDs(const ServiceDescriptor *service,
+                           map<string, string> *vars, Printer *p)
 {
   // Sort method ids based on client_streaming() so switch tables are compact.
-  std::vector<const MethodDescriptor*> sorted_methods(service->method_count());
-  for (int i = 0; i < service->method_count(); ++i) {
+  std::vector<const MethodDescriptor *> sorted_methods(service->method_count());
+  for (int i = 0; i < service->method_count(); ++i)
+  {
     sorted_methods[i] = service->method(i);
   }
   stable_sort(sorted_methods.begin(), sorted_methods.end(),
               CompareMethodClientStreaming);
-  for (size_t i = 0; i < sorted_methods.size(); i++) {
-    const MethodDescriptor* method = sorted_methods[i];
+  for (size_t i = 0; i < sorted_methods.size(); i++)
+  {
+    const MethodDescriptor *method = sorted_methods[i];
     (*vars)["method_id"] = to_string(i);
     (*vars)["method_id_name"] = MethodIdFieldName(method);
     p->Print(
@@ -1021,21 +1191,23 @@ static void PrintMethodIDs(const ServiceDescriptor* service,
 
 // Place all method invocations into a single class to reduce memory footprint
 // on Android.
-static void PrintMethodHandlerClass(const ServiceDescriptor* service,
-                                   std::map<string, string>* vars,
-                                   Printer* p,
-                                   CallType call_type,
-                                   bool generate_nano) {
+static void PrintMethodHandlerClass(const ServiceDescriptor *service,
+                                    std::map<string, string> *vars,
+                                    Printer *p,
+                                    CallType call_type,
+                                    bool generate_nano)
+{
 
-  switch(call_type) {
-    case VERTX_CALL:
-      (*vars)["service_name"] = service->name() + "VertxImplBase";
-      (*vars)["method_handler_prefix"] = "Vertx";
-      break;
-    default:
-      (*vars)["service_name"] = service->name() + "ImplBase";
-      (*vars)["method_handler_prefix"] = "";
-      break;
+  switch (call_type)
+  {
+  case VERTX_CALL:
+    (*vars)["service_name"] = service->name() + "VertxImplBase";
+    (*vars)["method_handler_prefix"] = "Vertx";
+    break;
+  default:
+    (*vars)["service_name"] = service->name() + "ImplBase";
+    (*vars)["method_handler_prefix"] = "";
+    break;
   }
 
   p->Print(
@@ -1062,9 +1234,11 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
   p->Indent();
   p->Indent();
 
-  for (int i = 0; i < service->method_count(); ++i) {
-    const MethodDescriptor* method = service->method(i);
-    if (method->client_streaming()) {
+  for (int i = 0; i < service->method_count(); ++i)
+  {
+    const MethodDescriptor *method = service->method(i);
+    if (method->client_streaming())
+    {
       continue;
     }
     (*vars)["method_id_name"] = MethodIdFieldName(method);
@@ -1074,21 +1248,25 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
     (*vars)["output_type"] = MessageFullJavaName(generate_nano,
                                                  method->output_type());
 
-    switch(call_type) {
-      case VERTX_CALL:
+    switch (call_type)
+    {
+    case VERTX_CALL:
+      p->Print(
+          *vars,
+          "case $method_id_name$:\n"
+          "  serviceImpl.$lower_method_name$(($input_type$) request,\n");
+      if (method->server_streaming())
+      {
         p->Print(
             *vars,
-            "case $method_id_name$:\n"
-            "  serviceImpl.$lower_method_name$(($input_type$) request,\n");
-        if (method->server_streaming()) {
-          p->Print(
-            *vars,
             "      (io.vertx.grpc.GrpcWriteStream<$output_type$>) io.vertx.grpc.GrpcWriteStream.create(responseObserver));\n");
-        } else {
-          // act like a future
-          p->Print(
+      }
+      else
+      {
+        // act like a future
+        p->Print(
             *vars,
-            "      (io.vertx.core.Future<$output_type$>) io.vertx.core.Future.<$output_type$>future().setHandler(ar -> {\n"
+            "      (io.vertx.core.Promise<$output_type$>) io.vertx.core.Promise.<$output_type$>promise().future().setHandler(ar -> {\n"
             "        if (ar.succeeded()) {\n"
             "          (($StreamObserver$<$output_type$>) responseObserver).onNext(ar.result());\n"
             "          responseObserver.onCompleted();\n"
@@ -1096,19 +1274,19 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
             "          responseObserver.onError(ar.cause());\n"
             "        }\n"
             "      }));\n");
-        }
-        p->Print(
+      }
+      p->Print(
           *vars,
           "  break;\n");
-        break;
-      default:
-        p->Print(
-            *vars,
-            "case $method_id_name$:\n"
-            "  serviceImpl.$lower_method_name$(($input_type$) request,\n"
-            "      ($StreamObserver$<$output_type$>) responseObserver);\n"
-            "  break;\n");
-        break;
+      break;
+    default:
+      p->Print(
+          *vars,
+          "case $method_id_name$:\n"
+          "  serviceImpl.$lower_method_name$(($input_type$) request,\n"
+          "      ($StreamObserver$<$output_type$>) responseObserver);\n"
+          "  break;\n");
+      break;
     }
   }
   p->Print("default:\n"
@@ -1129,9 +1307,11 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
   p->Indent();
   p->Indent();
 
-  for (int i = 0; i < service->method_count(); ++i) {
-    const MethodDescriptor* method = service->method(i);
-    if (!method->client_streaming()) {
+  for (int i = 0; i < service->method_count(); ++i)
+  {
+    const MethodDescriptor *method = service->method(i);
+    if (!method->client_streaming())
+    {
       continue;
     }
     (*vars)["idx"] = std::to_string(i);
@@ -1142,10 +1322,12 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
     (*vars)["output_type"] = MessageFullJavaName(generate_nano,
                                                  method->output_type());
 
-    switch(call_type) {
-      case VERTX_CALL:
-        if (method->server_streaming()) {
-          p->Print(
+    switch (call_type)
+    {
+    case VERTX_CALL:
+      if (method->server_streaming())
+      {
+        p->Print(
             *vars,
             "case $method_id_name$:\n"
             "  io.vertx.grpc.GrpcReadStream<$input_type$> request$idx$ = io.vertx.grpc.GrpcReadStream.<$input_type$>create();\n"
@@ -1154,13 +1336,15 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
             "       request$idx$,\n"
             "       (io.grpc.stub.StreamObserver<$output_type$>) responseObserver));\n"
             "  return ($StreamObserver$<Req>) request$idx$.readObserver();\n");
-        } else {
-          // act like a future
-          p->Print(
+      }
+      else
+      {
+        // act like a future
+        p->Print(
             *vars,
             "case $method_id_name$:\n"
             "  io.vertx.grpc.GrpcReadStream<$input_type$> request$idx$ = io.vertx.grpc.GrpcReadStream.<$input_type$>create();\n"
-            "  serviceImpl.$lower_method_name$(request$idx$, (io.vertx.core.Future<$output_type$>) io.vertx.core.Future.<$output_type$>future().setHandler(ar -> {\n"
+            "  serviceImpl.$lower_method_name$(request$idx$, (io.vertx.core.Promise<$output_type$>) io.vertx.core.Promise.<$output_type$>future().setHandler(ar -> {\n"
             "    if (ar.succeeded()) {\n"
             "      (($StreamObserver$<$output_type$>) responseObserver).onNext(ar.result());\n"
             "      responseObserver.onCompleted();\n"
@@ -1169,15 +1353,15 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
             "    }\n"
             "  }));\n"
             "  return ($StreamObserver$<Req>) request$idx$.readObserver();\n");
-        }
-        break;
-      default:
-        p->Print(
-            *vars,
-            "case $method_id_name$:\n"
-            "  return ($StreamObserver$<Req>) serviceImpl.$lower_method_name$(\n"
-            "      ($StreamObserver$<$output_type$>) responseObserver);\n");
-        break;
+      }
+      break;
+    default:
+      p->Print(
+          *vars,
+          "case $method_id_name$:\n"
+          "  return ($StreamObserver$<Req>) serviceImpl.$lower_method_name$(\n"
+          "      ($StreamObserver$<$output_type$>) responseObserver);\n");
+      break;
     }
   }
   p->Print("default:\n"
@@ -1188,19 +1372,19 @@ static void PrintMethodHandlerClass(const ServiceDescriptor* service,
   p->Print("  }\n"
            "}\n");
 
-
   p->Outdent();
   p->Print("}\n\n");
 }
 
-static void PrintGetServiceDescriptorMethod(const ServiceDescriptor* service,
-                                   std::map<string, string>* vars,
-                                   Printer* p,
-                                   ProtoFlavor flavor) {
+static void PrintGetServiceDescriptorMethod(const ServiceDescriptor *service,
+                                            std::map<string, string> *vars,
+                                            Printer *p,
+                                            ProtoFlavor flavor)
+{
   (*vars)["service_name"] = service->name();
 
-
-  if (flavor == ProtoFlavor::NORMAL) {
+  if (flavor == ProtoFlavor::NORMAL)
+  {
     (*vars)["proto_base_descriptor_supplier"] = service->name() + "BaseDescriptorSupplier";
     (*vars)["proto_file_descriptor_supplier"] = service->name() + "FileDescriptorSupplier";
     (*vars)["proto_method_descriptor_supplier"] = service->name() + "MethodDescriptorSupplier";
@@ -1269,13 +1453,15 @@ static void PrintGetServiceDescriptorMethod(const ServiceDescriptor* service,
       "serviceDescriptor = result = $ServiceDescriptor$.newBuilder(SERVICE_NAME)");
   p->Indent();
   p->Indent();
-  if (flavor == ProtoFlavor::NORMAL) {
+  if (flavor == ProtoFlavor::NORMAL)
+  {
     p->Print(
         *vars,
         "\n.setSchemaDescriptor(new $proto_file_descriptor_supplier$())");
   }
-  for (int i = 0; i < service->method_count(); ++i) {
-    const MethodDescriptor* method = service->method(i);
+  for (int i = 0; i < service->method_count(); ++i)
+  {
+    const MethodDescriptor *method = service->method(i);
     (*vars)["method_method_name"] = MethodPropertiesGetterName(method);
     p->Print(*vars, "\n.addMethod($method_method_name$())");
   }
@@ -1294,11 +1480,12 @@ static void PrintGetServiceDescriptorMethod(const ServiceDescriptor* service,
   p->Print("}\n");
 }
 
-static void PrintBindServiceMethodBody(const ServiceDescriptor* service,
-                                   std::map<string, string>* vars,
-                                   Printer* p,
-                                   CallType call_type,
-                                   bool generate_nano) {
+static void PrintBindServiceMethodBody(const ServiceDescriptor *service,
+                                       std::map<string, string> *vars,
+                                       Printer *p,
+                                       CallType call_type,
+                                       bool generate_nano)
+{
   (*vars)["service_name"] = service->name();
   p->Indent();
   p->Print(*vars,
@@ -1306,8 +1493,9 @@ static void PrintBindServiceMethodBody(const ServiceDescriptor* service,
            "$ServerServiceDefinition$.builder(getServiceDescriptor())\n");
   p->Indent();
   p->Indent();
-  for (int i = 0; i < service->method_count(); ++i) {
-    const MethodDescriptor* method = service->method(i);
+  for (int i = 0; i < service->method_count(); ++i)
+  {
+    const MethodDescriptor *method = service->method(i);
     (*vars)["lower_method_name"] = LowerMethodName(method);
     (*vars)["method_method_name"] = MethodPropertiesGetterName(method);
     (*vars)["input_type"] = MessageFullJavaName(generate_nano,
@@ -1317,16 +1505,25 @@ static void PrintBindServiceMethodBody(const ServiceDescriptor* service,
     (*vars)["method_id_name"] = MethodIdFieldName(method);
     bool client_streaming = method->client_streaming();
     bool server_streaming = method->server_streaming();
-    if (client_streaming) {
-      if (server_streaming) {
+    if (client_streaming)
+    {
+      if (server_streaming)
+      {
         (*vars)["calls_method"] = "asyncBidiStreamingCall";
-      } else {
+      }
+      else
+      {
         (*vars)["calls_method"] = "asyncClientStreamingCall";
       }
-    } else {
-      if (server_streaming) {
+    }
+    else
+    {
+      if (server_streaming)
+      {
         (*vars)["calls_method"] = "asyncServerStreamingCall";
-      } else {
+      }
+      else
+      {
         (*vars)["calls_method"] = "asyncUnaryCall";
       }
     }
@@ -1337,13 +1534,14 @@ static void PrintBindServiceMethodBody(const ServiceDescriptor* service,
         "$method_method_name$(),\n"
         "$calls_method$(\n");
     p->Indent();
-    switch(call_type) {
-      case VERTX_CALL:
-        (*vars)["method_handler_prefix"] = "Vertx";
-        break;
-      default:
-        (*vars)["method_handler_prefix"] = "";
-        break;
+    switch (call_type)
+    {
+    case VERTX_CALL:
+      (*vars)["method_handler_prefix"] = "Vertx";
+      break;
+    default:
+      (*vars)["method_handler_prefix"] = "";
+      break;
     }
     p->Print(
         *vars,
@@ -1360,20 +1558,22 @@ static void PrintBindServiceMethodBody(const ServiceDescriptor* service,
   p->Outdent();
 }
 
-static void PrintService(const ServiceDescriptor* service,
-                         std::map<string, string>* vars,
-                         Printer* p,
+static void PrintService(const ServiceDescriptor *service,
+                         std::map<string, string> *vars,
+                         Printer *p,
                          ProtoFlavor flavor,
-                         bool disable_version) {
+                         bool disable_version)
+{
   (*vars)["service_name"] = service->name();
   (*vars)["file_name"] = service->file()->name();
   (*vars)["service_class_name"] = ServiceClassName(service);
   (*vars)["grpc_version"] = "";
-  #ifdef GRPC_VERSION
-  if (!disable_version) {
+#ifdef GRPC_VERSION
+  if (!disable_version)
+  {
     (*vars)["grpc_version"] = " (version " XSTR(GRPC_VERSION) ")";
   }
-  #endif
+#endif
   // TODO(nmittler): Replace with WriteServiceDocComment once included by protobuf distro.
   GrpcWriteServiceDocComment(p, service);
   p->Print(
@@ -1382,7 +1582,8 @@ static void PrintService(const ServiceDescriptor* service,
       "    value = \"by gRPC proto compiler$grpc_version$\",\n"
       "    comments = \"Source: $file_name$\")\n");
 
-  if (service->options().deprecated()) {
+  if (service->options().deprecated())
+  {
     p->Print(*vars, "@$Deprecated$\n");
   }
   p->Print(
@@ -1395,35 +1596,35 @@ static void PrintService(const ServiceDescriptor* service,
 
   // Vert.x helper
   p->Print(
-    *vars,
-    "private static <T> $StreamObserver$<T> toObserver(final io.vertx.core.Handler<io.vertx.core.AsyncResult<T>> handler) {\n"
-    "  return new $StreamObserver$<T>() {\n"
-    "    private volatile boolean resolved = false;\n"
-    "    @Override\n"
-    "    public void onNext(T value) {\n"
-    "      if (!resolved) {\n"
-    "        resolved = true;\n"
-    "        handler.handle(io.vertx.core.Future.succeededFuture(value));\n"
-    "      }\n"
-    "    }\n"
-    "\n"
-    "    @Override\n"
-    "    public void onError(Throwable t) {\n"
-    "      if (!resolved) {\n"
-    "        resolved = true;\n"
-    "        handler.handle(io.vertx.core.Future.failedFuture(t));\n"
-    "      }\n"
-    "    }\n"
-    "\n"
-    "    @Override\n"
-    "    public void onCompleted() {\n"
-    "      if (!resolved) {\n"
-    "        resolved = true;\n"
-    "        handler.handle(io.vertx.core.Future.succeededFuture());\n"
-    "      }\n"
-    "    }\n"
-    "  };\n"
-    "}\n\n");
+      *vars,
+      "private static <T> $StreamObserver$<T> toObserver(final io.vertx.core.Handler<io.vertx.core.AsyncResult<T>> handler) {\n"
+      "  return new $StreamObserver$<T>() {\n"
+      "    private volatile boolean resolved = false;\n"
+      "    @Override\n"
+      "    public void onNext(T value) {\n"
+      "      if (!resolved) {\n"
+      "        resolved = true;\n"
+      "        handler.handle(io.vertx.core.Future.succeededFuture(value));\n"
+      "      }\n"
+      "    }\n"
+      "\n"
+      "    @Override\n"
+      "    public void onError(Throwable t) {\n"
+      "      if (!resolved) {\n"
+      "        resolved = true;\n"
+      "        handler.handle(io.vertx.core.Future.failedFuture(t));\n"
+      "      }\n"
+      "    }\n"
+      "\n"
+      "    @Override\n"
+      "    public void onCompleted() {\n"
+      "      if (!resolved) {\n"
+      "        resolved = true;\n"
+      "        handler.handle(io.vertx.core.Future.succeededFuture());\n"
+      "      }\n"
+      "    }\n"
+      "  };\n"
+      "}\n\n");
 
   p->Print(
       *vars,
@@ -1500,7 +1701,8 @@ static void PrintService(const ServiceDescriptor* service,
   p->Print("}\n");
 }
 
-void PrintImports(Printer* p, bool generate_nano) {
+void PrintImports(Printer *p, bool generate_nano)
+{
   p->Print(
       "import static "
       "io.grpc.MethodDescriptor.generateFullMethodName;\n"
@@ -1530,15 +1732,17 @@ void PrintImports(Printer* p, bool generate_nano) {
       "io.grpc.stub.ServerCalls.asyncUnimplementedStreamingCall;\n"
       "import static "
       "io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall;\n\n");
-  if (generate_nano) {
+  if (generate_nano)
+  {
     p->Print("import java.io.IOException;\n\n");
   }
 }
 
-void GenerateService(const ServiceDescriptor* service,
-                     google::protobuf::io::ZeroCopyOutputStream* out,
+void GenerateService(const ServiceDescriptor *service,
+                     google::protobuf::io::ZeroCopyOutputStream *out,
                      ProtoFlavor flavor,
-                     bool disable_version) {
+                     bool disable_version)
+{
   // All non-generated classes must be referred by fully qualified names to
   // avoid collision with generated classes.
   std::map<string, string> vars;
@@ -1574,7 +1778,8 @@ void GenerateService(const ServiceDescriptor* service,
   Printer printer(out, '$');
   string package_name = ServiceJavaPackage(service->file(),
                                            flavor == ProtoFlavor::NANO);
-  if (!package_name.empty()) {
+  if (!package_name.empty())
+  {
     printer.Print(
         "package $package_name$;\n\n",
         "package_name", package_name);
@@ -1583,22 +1788,29 @@ void GenerateService(const ServiceDescriptor* service,
 
   // Package string is used to fully qualify method names.
   vars["Package"] = service->file()->package();
-  if (!vars["Package"].empty()) {
+  if (!vars["Package"].empty())
+  {
     vars["Package"].append(".");
   }
   PrintService(service, &vars, &printer, flavor, disable_version);
 }
 
-string ServiceJavaPackage(const FileDescriptor* file, bool nano) {
+string ServiceJavaPackage(const FileDescriptor *file, bool nano)
+{
   string result = google::protobuf::compiler::java::ClassName(file);
   size_t last_dot_pos = result.find_last_of('.');
-  if (last_dot_pos != string::npos) {
+  if (last_dot_pos != string::npos)
+  {
     result.resize(last_dot_pos);
-  } else {
+  }
+  else
+  {
     result = "";
   }
-  if (nano) {
-    if (!result.empty()) {
+  if (nano)
+  {
+    if (!result.empty())
+    {
       result += ".";
     }
     result += "nano";
@@ -1606,8 +1818,9 @@ string ServiceJavaPackage(const FileDescriptor* file, bool nano) {
   return result;
 }
 
-string ServiceClassName(const google::protobuf::ServiceDescriptor* service) {
+string ServiceClassName(const google::protobuf::ServiceDescriptor *service)
+{
   return service->name() + "Grpc";
 }
 
-}  // namespace java_grpc_generator
+} // namespace java_grpc_generator
