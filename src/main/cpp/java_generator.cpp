@@ -883,6 +883,68 @@ static void PrintStub(
           "    $input_type$ request)");
       break;
     case VERTX_CALL:
+      if (!impl_base && !interface)
+      {
+        // promise based overloads
+        if (client_streaming)
+        {
+          if (server_streaming)
+          {
+            p->Print(
+                *vars,
+                "io.vertx.core.Future<io.vertx.grpc.GrpcBidiExchange<$output_type$, $input_type$>> $lower_method_name$() {\n"
+                "    io.vertx.core.Promise<io.vertx.grpc.GrpcBidiExchange<$output_type$, $input_type$>> promise = io.vertx.core.Promise.promise();\n"
+                "    $lower_method_name$(promise::complete);\n"
+                "    return promise.future();\n"
+                "}\n");
+          }
+          else
+          {
+            p->Print(
+                *vars,
+                "io.vertx.core.Future<io.vertx.grpc.GrpcUniExchange<$input_type$, $output_type$>> $lower_method_name$() {\n"
+                "    io.vertx.core.Promise<io.vertx.grpc.GrpcUniExchange<$input_type$, $output_type$>> promise = io.vertx.core.Promise.promise();\n"
+                "    $lower_method_name$(promise::complete);\n"
+                "    return promise.future();\n"
+                "}\n");
+          }
+        }
+        else
+        {
+          if (server_streaming)
+          {
+            p->Print(
+                *vars,
+                "io.vertx.core.Future<io.vertx.grpc.GrpcReadStream<$output_type$>> $lower_method_name$($input_type$ request) {\n"
+                "    io.vertx.core.Promise<io.vertx.grpc.GrpcReadStream<$output_type$>> promise = io.vertx.core.Promise.promise();\n"
+                "    $lower_method_name$(request, promise::complete);\n"
+                "    return promise.future();\n"
+                "}\n");
+          }
+          else
+          {
+            p->Print(
+                *vars,
+                "io.vertx.core.Future<$output_type$> $lower_method_name$($input_type$ request) {\n"
+                "    io.vertx.core.Promise<$output_type$> promise = io.vertx.core.Promise.promise();\n"
+                "    $lower_method_name$(request, promise);\n"
+                "    return promise.future();\n"
+                "}\n");
+          }
+        }
+        // print preamble to method again
+        p->Print("\n");
+        if (!interface)
+        {
+          GrpcWriteMethodDocComment(p, method);
+        }
+
+        if (method->options().deprecated())
+        {
+          p->Print(*vars, "@$Deprecated$\n");
+        }
+        p->Print("public ");
+      }
       if (impl_base || interface)
       {
         if (client_streaming)
