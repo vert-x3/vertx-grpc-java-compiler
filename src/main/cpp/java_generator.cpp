@@ -1266,7 +1266,7 @@ static void PrintMethodHandlerClass(const ServiceDescriptor *service,
         // act like a future
         p->Print(
             *vars,
-            "      (io.vertx.core.Promise<$output_type$>) io.vertx.core.Promise.<$output_type$>promise().future().setHandler(ar -> {\n"
+            "      (io.vertx.core.Promise<$output_type$>) io.vertx.core.Promise.<$output_type$>promise().future().onComplete(ar -> {\n"
             "        if (ar.succeeded()) {\n"
             "          (($StreamObserver$<$output_type$>) responseObserver).onNext(ar.result());\n"
             "          responseObserver.onCompleted();\n"
@@ -1344,7 +1344,7 @@ static void PrintMethodHandlerClass(const ServiceDescriptor *service,
             *vars,
             "case $method_id_name$:\n"
             "  io.vertx.grpc.GrpcReadStream<$input_type$> request$idx$ = io.vertx.grpc.GrpcReadStream.<$input_type$>create();\n"
-            "  serviceImpl.$lower_method_name$(request$idx$, (io.vertx.core.Future<$output_type$>) io.vertx.core.Future.<$output_type$>future().setHandler(ar -> {\n"
+            "  serviceImpl.$lower_method_name$(request$idx$, (io.vertx.core.Future<$output_type$>) io.vertx.core.Future.<$output_type$>future().onComplete(ar -> {\n"
             "    if (ar.succeeded()) {\n"
             "      (($StreamObserver$<$output_type$>) responseObserver).onNext(ar.result());\n"
             "      responseObserver.onCompleted();\n"
